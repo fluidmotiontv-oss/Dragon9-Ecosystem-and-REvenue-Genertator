@@ -473,8 +473,8 @@ export async function evaluateMeddpiccWithHeuristicEngine(
       return {
         ...data,
         source: 'live_api',
-        modelUsed: data.modelUsed || 'gemini-2.5-flash',
-        engineReason: 'Evaluated via Live Gemini 2.5 Flash Server API'
+        modelUsed: data.modelUsed || 'gemini-3.6-flash',
+        engineReason: 'Evaluated via Live Gemini 3.6 Flash Server API'
       };
     } else {
       throw new Error('Malformed payload from live API');

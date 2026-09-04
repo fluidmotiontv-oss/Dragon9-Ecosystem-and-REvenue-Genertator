@@ -42,7 +42,7 @@ Please generate a comprehensive, structured "Asset Monetization Plan" that inclu
 Format the report clearly in Markdown using headers, bullet points, and bold text for readability. Be concise, professional, and focus on practical monetization.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: prompt,
       });
 
@@ -99,7 +99,7 @@ Each item in the array must have:
 Do not enclose the JSON after "---AUDIT_TASKS_JSON---" in backticks or markdown code blocks.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: prompt,
       });
 
@@ -227,7 +227,7 @@ Output ONLY a single valid JSON object with the following schema:
 Do not wrap in backticks or markdown fences like \`\`\`json. Return pure JSON only.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: prompt,
       });
 
@@ -238,7 +238,7 @@ Do not wrap in backticks or markdown fences like \`\`\`json. Return pure JSON on
       res.json({
         ...parsed,
         source: 'live_api',
-        modelUsed: 'gemini-2.5-flash',
+        modelUsed: 'gemini-3.6-flash',
         timestamp: new Date().toISOString()
       });
     } catch (error: any) {
@@ -277,7 +277,7 @@ Files to organize:
 ${files.join('\n')}`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: prompt,
       });
 

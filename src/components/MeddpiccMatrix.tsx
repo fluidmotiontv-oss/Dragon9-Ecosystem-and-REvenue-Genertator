@@ -70,7 +70,7 @@ export const MeddpiccMatrix: React.FC<MeddpiccMatrixProps> = ({ auditResult, onA
               <>
                 <Globe className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
                 <span className="text-emerald-300">Live API</span>
-                <span className="text-slate-500 text-[11px]">({auditResult.modelUsed || 'Gemini 2.5'})</span>
+                <span className="text-slate-500 text-[11px]">({auditResult.modelUsed || 'Gemini 3.6'})</span>
               </>
             ) : (
               <>
