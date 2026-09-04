@@ -7,6 +7,8 @@ const DEFAULT_AGENTS: AgentConfig[] = [
     name: 'Enterprise Deal Closer',
     role: 'Enterprise Deal Closer',
     archetype: 'Sovereign Advisor',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
     systemPrompt: `You are Enterprise Deal Closer, an elite sales execution engine operating on MEDDPICC framework principles. 
 
 GOAL: Audit enterprise deal pipelines, identify hidden qualification risks, and output executive risk mitigation strategies.
@@ -23,6 +25,8 @@ CORE BEHAVIORS:
     name: 'Technical Discovery Specialist',
     role: 'Technical Discovery Specialist',
     archetype: 'Analytical Solution Architect',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
     systemPrompt: `You are Technical Discovery Specialist, an expert technical presales engineer and solution architect.
 
 GOAL: Conduct technical deep-dives, validate architecture compliance, and resolve security/integration objections.
@@ -39,6 +43,8 @@ CORE BEHAVIORS:
     name: 'Executive Outreach Strategist',
     role: 'Executive Outreach Strategist',
     archetype: 'C-Suite Strategic Communicator',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
     systemPrompt: `You are Executive Outreach Strategist, an expert in C-suite positioning, strategic messaging, and deal revival.
 
 GOAL: Research target accounts, establish strategic alignment with key decision-makers, and drive high-converting engagement.
@@ -55,7 +61,9 @@ CORE BEHAVIORS:
     name: 'Nexus-Orchestrator',
     role: 'Chief AI Architect & Orchestrator',
     archetype: 'Systems Orchestrator',
-    systemPrompt: `You are Nexus-Orchestrator, an elite meta-agent designed to manage and coordinate sub-agents for Google AI Studio app development and optimization.
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
+    systemPrompt: `You are Nexus-Orchestrator, an elite meta-agent designed to manage and coordinate sub-agents for Google AI Studio app development and optimization (Production Target: https://aegis-agent-generator.ai.studio/ & Cloud Run: https://dragon9-ecosystem-612293447363.asia-southeast1.run.app).
 GOAL: Orchestrate specialized AI agents to build, optimize, and scale AI Studio applications from concept to production.
 CORE BEHAVIORS:
 - Analyze application briefs and portfolio audits to determine required capabilities.
@@ -70,6 +78,8 @@ CORE BEHAVIORS:
     name: 'Aegis-Inbound-SDR',
     role: 'Inbound Lead Qualification & Meeting Setter',
     archetype: 'Consultative Qualifier',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
     systemPrompt: `You are Aegis-Inbound-SDR, specialized in instantly qualifying inbound demo requests and leads.
 GOAL: Convert raw inbound leads into qualified sales meetings using BANT (Budget, Authority, Need, Timeline).
 CORE BEHAVIORS:
@@ -84,6 +94,8 @@ CORE BEHAVIORS:
     name: 'Dragon-Battlecard-AI',
     role: 'Competitive Intelligence & Landmine Strategy',
     archetype: 'Analytical Competitor Disruptor',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
     systemPrompt: `You are Dragon-Battlecard-AI, specialized in competitive displacement and objection handling.
 GOAL: Identify competitor weaknesses, draft landmine questions for buyers, and counter competitive objections in active deals.
 CORE BEHAVIORS:
@@ -98,6 +110,8 @@ CORE BEHAVIORS:
     name: 'Aegis-PaperProcess-Navigator',
     role: 'Procurement & Security Compliance Accelerator',
     archetype: 'Authoritative Legal Strategist',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
     systemPrompt: `You are Aegis-Navigator, an expert in enterprise procurement, vendor onboarding, and legal paper process navigation.
 GOAL: Overcome legal, security, and procurement bottlenecks to accelerate closing timelines (MEDDPICC Paper Process).
 CORE BEHAVIORS:
@@ -112,6 +126,8 @@ CORE BEHAVIORS:
     name: 'RevenueEngine-Revival-Copilot',
     role: 'Stalled Deal Re-engagement & Churn Mitigation',
     archetype: 'High-Impact Strategic Negotiator',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
     systemPrompt: `You are RevenueEngine-Revival, specialized in re-activating cold/stalled deals and saving at-risk customer accounts.
 GOAL: Re-open communications with accounts that have gone dark (30+ days inactive) or flagged high churn risk.
 CORE BEHAVIORS:
@@ -145,7 +161,9 @@ export function useEcosystem() {
             current.name !== defAgent.name ||
             current.role !== defAgent.role ||
             current.systemPrompt !== defAgent.systemPrompt ||
-            current.archetype !== defAgent.archetype
+            current.archetype !== defAgent.archetype ||
+            !current.studioUrl ||
+            !current.cloudRunUrl
           ) {
             parsed[existingIdx] = {
               ...current,
@@ -154,6 +172,8 @@ export function useEcosystem() {
               role: defAgent.role,
               archetype: defAgent.archetype,
               systemPrompt: defAgent.systemPrompt,
+              studioUrl: defAgent.studioUrl || 'https://aegis-agent-generator.ai.studio/',
+              cloudRunUrl: defAgent.cloudRunUrl || 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
               tools: { ...defAgent.tools, ...current.tools }
             };
             updated = true;
@@ -173,12 +193,26 @@ export function useEcosystem() {
     if (storedActive) {
       const activeObj = JSON.parse(storedActive);
       const matchingDef = DEFAULT_AGENTS.find(d => d.id === activeObj.id || d.name === activeObj.name || d.role === activeObj.role);
-      if (matchingDef && (activeObj.name !== matchingDef.name || activeObj.systemPrompt !== matchingDef.systemPrompt)) {
-        const refreshedActive = { ...activeObj, id: matchingDef.id, name: matchingDef.name, role: matchingDef.role, archetype: matchingDef.archetype, systemPrompt: matchingDef.systemPrompt, tools: { ...matchingDef.tools, ...activeObj.tools } };
+      if (matchingDef && (activeObj.name !== matchingDef.name || activeObj.systemPrompt !== matchingDef.systemPrompt || !activeObj.studioUrl || !activeObj.cloudRunUrl)) {
+        const refreshedActive = { 
+          ...activeObj, 
+          id: matchingDef.id, 
+          name: matchingDef.name, 
+          role: matchingDef.role, 
+          archetype: matchingDef.archetype, 
+          systemPrompt: matchingDef.systemPrompt, 
+          studioUrl: matchingDef.studioUrl || 'https://aegis-agent-generator.ai.studio/', 
+          cloudRunUrl: matchingDef.cloudRunUrl || 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
+          tools: { ...matchingDef.tools, ...activeObj.tools } 
+        };
         setActiveAgent(refreshedActive);
         localStorage.setItem('aegis_active_agent', JSON.stringify(refreshedActive));
       } else {
-        setActiveAgent(activeObj);
+        setActiveAgent({ 
+          ...activeObj, 
+          studioUrl: activeObj.studioUrl || 'https://aegis-agent-generator.ai.studio/',
+          cloudRunUrl: activeObj.cloudRunUrl || 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app'
+        });
       }
     } else {
       setActiveAgent(DEFAULT_AGENTS[0]);

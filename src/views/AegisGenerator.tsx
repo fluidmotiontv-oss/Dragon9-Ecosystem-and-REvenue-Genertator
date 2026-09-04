@@ -1,12 +1,29 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useEcosystem } from '../store';
-import { Bot, Save, Download, Upload, Server, ArrowRight, Shield } from 'lucide-react';
+import { Bot, Save, Download, Upload, Server, ArrowRight, Shield, Globe, ExternalLink, Copy, Check } from 'lucide-react';
 
 export default function AegisGenerator() {
   const { activeAgent, updateActiveAgent, setActiveView } = useEcosystem();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [copiedStudio, setCopiedStudio] = useState(false);
+  const [copiedCloudRun, setCopiedCloudRun] = useState(false);
 
   if (!activeAgent) return null;
+
+  const studioUrl = activeAgent.studioUrl || 'https://aegis-agent-generator.ai.studio/';
+  const cloudRunUrl = activeAgent.cloudRunUrl || 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app';
+
+  const handleCopyStudio = () => {
+    navigator.clipboard.writeText(studioUrl);
+    setCopiedStudio(true);
+    setTimeout(() => setCopiedStudio(false), 2000);
+  };
+
+  const handleCopyCloudRun = () => {
+    navigator.clipboard.writeText(cloudRunUrl);
+    setCopiedCloudRun(true);
+    setTimeout(() => setCopiedCloudRun(false), 2000);
+  };
 
   const handleChange = (field: string, value: any) => {
     updateActiveAgent({ ...activeAgent, [field]: value });
@@ -20,7 +37,12 @@ export default function AegisGenerator() {
   };
 
   const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeAgent, null, 2));
+    const exportPayload = {
+      ...activeAgent,
+      studioUrl,
+      cloudRunUrl
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportPayload, null, 2));
     const el = document.createElement('a');
     el.setAttribute("href", dataStr);
     el.setAttribute("download", `${activeAgent.name.toLowerCase().replace(/\s+/g, '_')}_config.json`);
@@ -37,7 +59,11 @@ export default function AegisGenerator() {
       try {
         const config = JSON.parse(event.target?.result as string);
         if (config && config.id && config.name) {
-          updateActiveAgent(config);
+          updateActiveAgent({
+            ...config,
+            studioUrl: config.studioUrl || studioUrl,
+            cloudRunUrl: config.cloudRunUrl || cloudRunUrl
+          });
         }
       } catch (err) {
         console.error("Failed to parse JSON", err);
@@ -49,12 +75,18 @@ export default function AegisGenerator() {
 
   const handleExportRunner = () => {
     const script = `// Auto-generated Agent Runner for ${activeAgent.name}
-const config = ${JSON.stringify(activeAgent, null, 2)};
+// Production AI Studio Applet: ${studioUrl}
+// Production Cloud Run Gateway: ${cloudRunUrl}
+const config = ${JSON.stringify({ ...activeAgent, studioUrl, cloudRunUrl }, null, 2)};
 
 async function runAutonomousLoop() {
-  console.log(\`Starting Autonomous Agent: \${config.name}\`);
+  console.log(\`[AEGIS RUNTIME] Initializing \${config.name}\`);
   console.log(\`Role: \${config.role} | Archetype: \${config.archetype}\`);
-  // Insert LLM SDK instantiation and tool execution logic here.
+  console.log(\`AI Studio Applet: \${config.studioUrl}\`);
+  console.log(\`Cloud Run Gateway: \${config.cloudRunUrl}\`);
+  console.log('Active Tools:', config.tools);
+  
+  // Connect with live Aegis runtime and dispatch autonomously
 }
 
 runAutonomousLoop().catch(console.error);
@@ -69,7 +101,7 @@ runAutonomousLoop().catch(console.error);
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12 pt-16">
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500 pb-12 pt-16">
       
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
         <div>
@@ -81,14 +113,97 @@ runAutonomousLoop().catch(console.error);
         </div>
         <div className="flex items-center gap-3">
           <input type="file" ref={fileInputRef} className="hidden" accept=".json" onChange={handleImportJSON} />
-          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-slate-300 transition-colors">
+          <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-slate-300 transition-colors text-sm">
             <Upload className="w-4 h-4" /> Import JSON
           </button>
-          <button onClick={handleExportJSON} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-slate-300 transition-colors">
+          <button onClick={handleExportJSON} className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl text-slate-300 transition-colors text-sm">
             <Download className="w-4 h-4" /> Export JSON
           </button>
         </div>
       </header>
+
+      {/* Dual Deployed Production Targets Banner */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Target 1: AI Studio Applet */}
+        <div className="bg-gradient-to-r from-indigo-950/40 via-slate-900/70 to-slate-900/40 backdrop-blur-xl border border-indigo-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shrink-0">
+              <Globe className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">AI Studio Applet</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  LIVE
+                </span>
+              </div>
+              <p className="text-xs font-mono text-white/90 mt-0.5 select-all break-all">
+                {studioUrl}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <button
+              onClick={handleCopyStudio}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition-colors"
+              title="Copy URL"
+            >
+              {copiedStudio ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+              {copiedStudio ? 'Copied' : 'Copy'}
+            </button>
+            <a
+              href={studioUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 rounded-lg text-xs font-medium text-white shadow-md transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              <span>Open</span>
+            </a>
+          </div>
+        </div>
+
+        {/* Target 2: Cloud Run Gateway */}
+        <div className="bg-gradient-to-r from-purple-950/40 via-slate-900/70 to-slate-900/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
+              <Server className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-400">Cloud Run Ecosystem</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  PRODUCTION
+                </span>
+              </div>
+              <p className="text-xs font-mono text-white/90 mt-0.5 select-all break-all">
+                {cloudRunUrl}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+            <button
+              onClick={handleCopyCloudRun}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition-colors"
+              title="Copy URL"
+            >
+              {copiedCloudRun ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+              {copiedCloudRun ? 'Copied' : 'Copy'}
+            </button>
+            <a
+              href={cloudRunUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 border border-purple-400/30 rounded-lg text-xs font-medium text-white shadow-md transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              <span>Open</span>
+            </a>
+          </div>
+        </div>
+      </div>
 
       <div className="grid md:grid-cols-[2fr_1fr] gap-8">
         

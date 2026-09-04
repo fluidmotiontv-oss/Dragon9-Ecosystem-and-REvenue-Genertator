@@ -1,7 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import { viteSingleFile } from 'vite-plugin-singlefile';
 import path from 'path';
 import {defineConfig} from 'vite';
 
@@ -10,11 +9,10 @@ export default defineConfig(() => {
     plugins: [
       react(),
       tailwindcss(),
-      viteSingleFile(),
       VitePWA({
         registerType: 'autoUpdate',
         devOptions: {
-          enabled: true
+          enabled: false
         },
         manifest: {
           name: 'Dragon9 Ecosystem Master Hub',

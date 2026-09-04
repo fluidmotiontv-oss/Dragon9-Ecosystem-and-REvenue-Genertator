@@ -67,31 +67,183 @@ Format the report clearly in Markdown using headers, bullet points, and bold tex
 
       const ai = new GoogleGenAI({ apiKey });
       
-      const appList = apps.map((a: any) => `- **${a.name}**: ${a.description}`).join('\n');
+      const appList = apps.map((a: any) => `- **${a.name}**${a.url ? ` (Deployment URL: ${a.url})` : ''}: ${a.description}`).join('\n');
       
-      const prompt = `You are an elite AI Product Strategist and Venture Capital Analyst.
-The user is using the "Dragon9 Gateway" to audit their portfolio of AI Studio applications.
-Here is the list of their AI Studio apps:
-
+      const prompt = `You are an elite AI Product Strategist, Venture Capital Partner, and Enterprise Solutions Architect.
+The user is using the "Dragon9 Gateway" to execute a full portfolio audit across their deployed and developing AI Studio & Cloud applications.
+Apps provided:
 ${appList}
 
-Please generate a comprehensive, structured "Development & Profit Potential Audit" that includes for each app:
-1. **Technical Feasibility & Dev Roadmap**: Complexity, required stack, and next steps for development.
-2. **Market Demand & Positioning**: Target audience and product-market fit.
-3. **Monetization Strategy & ROI**: Best pricing models (e.g., SaaS, Freemium, API access) and profit potential.
-4. **Overall Score**: A rating out of 10 for both Development Ease and Profit Potential.
+Please generate a comprehensive, structured "Development, Architecture & Profit Potential Audit" with two parts:
 
-Format the report clearly in Markdown using headers, bullet points, and bold text for readability. Be professional and highly strategic.`;
+PART 1: STRATEGIC AUDIT REPORT (Markdown)
+1. **Executive Portfolio Summary**: Aggregate health, architectural cohesion, cross-application synergies (e.g. Aegis multi-agent generation powering Dragon9 Cloud Run sales workflows).
+2. **Individual App Deep-Dives**: For each application:
+   - **Technical Feasibility & Architecture**: Complexity, required stack, deployment posture (AI Studio / Cloud Run), security/authentication, and dev roadmap.
+   - **Market Demand & Competitive Moat**: Target TAM, buyer personas, and market positioning.
+   - **Monetization Architecture & Projected ROI**: Pricing tiers (Usage-based, Enterprise SaaS, API license), customer lifetime value (LTV), and timeline to profitability.
+   - **Scoring**: Score out of 10 for Development Readiness and Profit Potential.
+3. **Operational Milestones**: Recommended sequence of execution.
+
+PART 2: ACTIONABLE EXECUTION TASKS (Strict JSON)
+At the very end of your response, output the delimiter string "---AUDIT_TASKS_JSON---" followed immediately by a valid JSON array of actionable engineering, product, and revenue tasks for these apps.
+Each item in the array must have:
+- "id": string (e.g. "task-1", "task-2")
+- "appName": string (matching one of the app names provided)
+- "title": string (concise actionable title, max 60 chars)
+- "priority": "P0" | "P1" | "P2"
+- "category": "Architecture" | "Monetization" | "Compliance" | "AI Integration"
+- "description": string (clear instruction on what to implement)
+- "estimatedHours": number (realistic dev hours between 4 and 40)
+
+Do not enclose the JSON after "---AUDIT_TASKS_JSON---" in backticks or markdown code blocks.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: prompt,
       });
 
-      res.json({ report: response.text });
+      const fullText = response.text || '';
+      let report = fullText;
+      let tasks: any[] = [];
+
+      if (fullText.includes('---AUDIT_TASKS_JSON---')) {
+        const parts = fullText.split('---AUDIT_TASKS_JSON---');
+        report = parts[0].trim();
+        const jsonStr = parts[1].replace(/```json/gi, '').replace(/```/g, '').trim();
+        try {
+          tasks = JSON.parse(jsonStr);
+        } catch (e) {
+          console.warn('Failed to parse tasks JSON from Gemini output:', e);
+        }
+      }
+
+      // If tasks failed to parse or were missing, generate comprehensive baseline tasks
+      if (!Array.isArray(tasks) || tasks.length === 0) {
+        tasks = apps.flatMap((app: any, idx: number) => [
+          {
+            id: `task-${idx * 3 + 1}`,
+            appName: app.name,
+            title: `Integrate telemetry & usage tracking for ${app.name}`,
+            priority: 'P0',
+            category: 'Architecture',
+            description: `Implement distributed logging and request analytics for ${app.name} to monitor user prompt volume, latency, and error rates.`,
+            estimatedHours: 8,
+            status: 'todo'
+          },
+          {
+            id: `task-${idx * 3 + 2}`,
+            appName: app.name,
+            title: `Implement tiered Stripe billing & usage credits`,
+            priority: 'P1',
+            category: 'Monetization',
+            description: `Establish automated subscription tiers with metered usage limits and webhook reconciliation.`,
+            estimatedHours: 16,
+            status: 'todo'
+          },
+          {
+            id: `task-${idx * 3 + 3}`,
+            appName: app.name,
+            title: `Enforce role-based access control & SOC2 compliance`,
+            priority: 'P2',
+            category: 'Compliance',
+            description: `Audit API key security and session tokens to ensure enterprise security standards across client and server boundaries.`,
+            estimatedHours: 12,
+            status: 'todo'
+          }
+        ]);
+      } else {
+        tasks = tasks.map((t, idx) => ({
+          ...t,
+          id: t.id || `task-${idx + 1}`,
+          status: 'todo'
+        }));
+      }
+
+      res.json({ report, tasks });
     } catch (error) {
       console.error('Error generating AI apps audit:', error);
       res.status(500).json({ error: 'Failed to generate AI apps audit report' });
+    }
+  });
+
+  app.post('/api/revenue-meddpicc-audit', async (req, res) => {
+    try {
+      const { deal, agent } = req.body;
+      if (!deal) {
+        return res.status(400).json({ error: 'No deal data provided' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: 'GEMINI_API_KEY is not set' });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+
+      const prompt = `You are an elite enterprise Sales VP, CRO Advisor, and MEDDPICC auditor.
+Conduct an exhaustive MEDDPICC pipeline qualification audit for the following deal:
+
+PROSPECT / ACCOUNT: ${deal.prospectName || 'Target Enterprise'}
+DEAL STAGE: ${deal.dealStage || 'Post-Discovery Follow-Up'}
+DEAL NOTES & CONTEXT:
+${deal.dealNotes || 'No notes provided. Standard post-discovery evaluation.'}
+TARGET DEAL VALUE: $${deal.value ? Number(deal.value).toLocaleString() : '150,000'}
+
+ACTIVE AI AGENT PERSONA:
+${agent ? `${agent.name} (${agent.role} - Archetype: ${agent.archetype})` : 'Enterprise Deal Closer'}
+
+Analyze this deal rigorously against the 8 MEDDPICC pillars:
+1. Metrics (M): Quantifiable business impact, ROI hurdle rate, payback period.
+2. Economic Buyer (E): Verified direct access to P&L holder with discretionary budget and veto power.
+3. Decision Criteria (D): Technical, architectural, and commercial evaluation parameters.
+4. Decision Process (D): Sequential approval roadmap, committee stakeholders, and closing milestones.
+5. Paper Process (P): Procurement, InfoSec SIG questionnaires, MSA legal review, and signature chains.
+6. Identified Pain (I): Critical operational bottleneck, revenue leak, or strategic urgency.
+7. Champion (C): Internal advocate with organizational capital, credibility, and skin in the game.
+8. Competition (C): Incumbent vendors, DIY build alternatives, or "do-nothing" status quo inertia.
+
+Output ONLY a single valid JSON object with the following schema:
+{
+  "overallScore": number (0-100),
+  "grade": "A" | "B" | "C" | "F",
+  "qualificationStatus": string,
+  "summary": string,
+  "pillars": {
+    "metrics": { "pillar": "Metrics (M)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string },
+    "economicBuyer": { "pillar": "Economic Buyer (E)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string },
+    "decisionCriteria": { "pillar": "Decision Criteria (D)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string },
+    "decisionProcess": { "pillar": "Decision Process (D)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string },
+    "paperProcess": { "pillar": "Paper Process (P)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string },
+    "identifiedPain": { "pillar": "Identified Pain (I)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string },
+    "champion": { "pillar": "Champion (C)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string },
+    "competition": { "pillar": "Competition (C)", "score": number, "status": "strong"|"moderate"|"weak"|"gap", "finding": string, "gap": boolean, "recommendation": string }
+  },
+  "singlePointFailures": string[],
+  "surgicalRecommendations": string[],
+  "estimatedRoi": number
+}
+
+Do not wrap in backticks or markdown fences like \`\`\`json. Return pure JSON only.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+
+      let jsonText = response.text || '{}';
+      jsonText = jsonText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+      const parsed = JSON.parse(jsonText);
+      res.json({
+        ...parsed,
+        source: 'live_api',
+        modelUsed: 'gemini-2.5-flash',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error('Error generating live MEDDPICC audit:', error);
+      res.status(500).json({ error: error.message || 'Failed to generate MEDDPICC audit' });
     }
   });
 

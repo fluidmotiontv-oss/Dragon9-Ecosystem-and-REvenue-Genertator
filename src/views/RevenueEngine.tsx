@@ -1,7 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useEcosystem } from '../store';
-import { Activity, Terminal, Play, Square, Mail, RefreshCw, AlertCircle, TrendingUp, Sparkles } from 'lucide-react';
+import {
+  Activity,
+  Terminal,
+  Play,
+  Square,
+  Mail,
+  RefreshCw,
+  AlertCircle,
+  TrendingUp,
+  Sparkles,
+  Wifi,
+  WifiOff,
+  Cpu,
+  ShieldCheck,
+  Zap,
+  Globe,
+  Sliders,
+  CheckCircle2
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  getHeuristicMode,
+  setHeuristicMode,
+  subscribeNetworkStatus,
+  refreshNetworkStatus,
+  evaluateMeddpiccWithHeuristicEngine,
+  calculateLocalDeterministicMeddpicc
+} from '../services/heuristicEngine';
+import { MeddpiccAuditResult, HeuristicEngineMode, NetworkStatus } from '../types/meddpicc';
+import { MeddpiccMatrix } from '../components/MeddpiccMatrix';
 
 export default function RevenueEngine() {
   const { activeAgent, workerMetrics, updateWorkerMetrics, setActiveView } = useEcosystem();
@@ -9,6 +37,19 @@ export default function RevenueEngine() {
   const [logs, setLogs] = useState<string[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   
+  // Heuristic Engine & Connectivity State
+  const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    effectiveMode: 'live_api',
+    latencyMs: null,
+    lastChecked: new Date().toISOString(),
+    serverReachable: true
+  });
+  const [heuristicMode, setHeuristicModeState] = useState<HeuristicEngineMode>(getHeuristicMode());
+  const [currentAudit, setCurrentAudit] = useState<MeddpiccAuditResult | null>(null);
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [isPinging, setIsPinging] = useState(false);
+
   // Input states for Outreach
   const [deals, setDeals] = useState<any[]>([]);
   const [prospectName, setProspectName] = useState('');
@@ -20,12 +61,46 @@ export default function RevenueEngine() {
   // Toast State
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
+  // Subscribe to real-time network and heuristic changes
+  useEffect(() => {
+    const unsubscribe = subscribeNetworkStatus(status => {
+      setNetworkStatus(status);
+    });
+    refreshNetworkStatus();
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     const saved = localStorage.getItem('revenue_crm_deals');
     if (saved) {
-      setDeals(JSON.parse(saved));
+      const parsed = JSON.parse(saved);
+      setDeals(parsed);
+      if (parsed.length > 0) {
+        setProspectName(parsed[0].prospectName);
+        setDealStage(parsed[0].dealStage);
+        setDealNotes(parsed[0].dealNotes);
+      }
     } else {
-      const defaultDeals = [{ id: '1', prospectName: 'Acme Corp', dealStage: 'Post-Discovery Follow-Up', dealNotes: 'Missing Economic Buyer access. Need to quantify ROI.' }];
+      const defaultDeals = [
+        {
+          id: '1',
+          prospectName: 'Acme Corp',
+          dealStage: 'Post-Discovery Follow-Up',
+          dealNotes: 'Strong Champion in VP of Eng. Unconfirmed Economic Buyer access; need to quantify ROI hurdle rate with CFO.'
+        },
+        {
+          id: '2',
+          prospectName: 'Starlight Health',
+          dealStage: 'MEDDPICC Gap Resolution',
+          dealNotes: 'Technical evaluation passed with SSO SAML criteria locked. Paper process gap: InfoSec SIG questionnaire pending with legal.'
+        },
+        {
+          id: '3',
+          prospectName: 'Globex Robotics',
+          dealStage: 'Pricing & Contract Nudge',
+          dealNotes: 'Competitor offering 30% discount. Champion needs landmine questions to counter incumbent seat-tax and total cost of ownership.'
+        }
+      ];
       setDeals(defaultDeals);
       localStorage.setItem('revenue_crm_deals', JSON.stringify(defaultDeals));
       setProspectName(defaultDeals[0].prospectName);
@@ -39,7 +114,7 @@ export default function RevenueEngine() {
     const updated = [...deals, newDeal];
     setDeals(updated);
     localStorage.setItem('revenue_crm_deals', JSON.stringify(updated));
-    showToast('Deal saved to local storage.', 'success');
+    showToast('Deal saved to local CRM database.', 'success');
   };
 
   const loadDeal = (deal: any) => {
@@ -48,10 +123,21 @@ export default function RevenueEngine() {
     setDealNotes(deal.dealNotes);
   };
 
-  const deleteDeal = (id: string) => {
-    const updated = deals.filter(d => d.id !== id);
-    setDeals(updated);
-    localStorage.setItem('revenue_crm_deals', JSON.stringify(updated));
+  const handleModeSwitch = (mode: HeuristicEngineMode) => {
+    setHeuristicModeState(mode);
+    setHeuristicMode(mode);
+    addLog(`[HEURISTIC ROUTER] Engine operational mode set to "${mode.toUpperCase()}".`);
+    refreshNetworkStatus();
+    showToast(`Heuristic Engine set to ${mode === 'auto' ? 'Auto-Adaptive' : mode === 'force_live' ? 'Force Live API' : 'Local Deterministic (Offline)'}`, 'success');
+  };
+
+  const handleManualPing = async () => {
+    setIsPinging(true);
+    addLog('[HEURISTIC PROBE] Testing network connectivity & API server latency...');
+    const status = await refreshNetworkStatus();
+    setIsPinging(false);
+    addLog(`[HEURISTIC PROBE] Status: ${status.isOnline ? 'Online' : 'Offline'} | Latency: ${status.latencyMs ? `${status.latencyMs}ms` : 'N/A'} | Server reachable: ${status.serverReachable}`);
+    showToast(`Probe complete: ${status.effectiveMode === 'live_api' ? 'Live API Active' : 'Local Deterministic Active'} (${status.latencyMs || 0}ms)`, 'success');
   };
 
   useEffect(() => {
@@ -63,13 +149,14 @@ export default function RevenueEngine() {
   useEffect(() => {
     let interval: any;
     if (workerActive) {
-      addLog(`[WORKER INIT] Worker engine engaged for active persona: ${activeAgent?.name}`);
+      addLog(`[WORKER ENGAGED] Autonomous pipeline agent active (${activeAgent?.name || 'Enterprise Deal Closer'}).`);
+      addLog(`[HEURISTIC ROUTER] Active Engine Mode: ${networkStatus.effectiveMode === 'live_api' ? 'Live Gemini 2.5 API' : 'Local Deterministic MEDDPICC Engine'}`);
       interval = setInterval(() => {
         runWorkerLoop();
-      }, 3000);
+      }, 3500);
     }
     return () => clearInterval(interval);
-  }, [workerActive, activeAgent]);
+  }, [workerActive, activeAgent, networkStatus.effectiveMode]);
 
   const addLog = (msg: string) => {
     const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
@@ -81,137 +168,135 @@ export default function RevenueEngine() {
     setTimeout(() => setToast(null), 5000);
   };
 
-  const runWorkerLoop = () => {
-    if (Math.random() < 0.2) {
-      // 20% error rate
-      addLog(`[SYSTEM ERROR] CRM Rate Limit exceeded during pipeline sync.`);
-      showToast(`Critical Error: CRM API Rate Limit Exceeded`, 'error');
-      setWorkerActive(false);
-      return;
+  // Autonomous worker loop utilizing the heuristic engine
+  const runWorkerLoop = async () => {
+    const sampleAccounts = [
+      { name: 'Acme Corp', notes: 'Strong Champion with unconfirmed Economic Buyer access. Need to quantify ROI.', stage: 'MEDDPICC Gap Resolution' },
+      { name: 'Starlight Health', notes: 'SSO SAML and zero-trust specs approved. InfoSec SIG questionnaire pending with legal.', stage: 'Post-Discovery Follow-Up' },
+      { name: 'Globex Robotics', notes: 'Incumbent pushing price war. Champion armed with landmine TCO questions.', stage: 'Pricing & Contract Nudge' },
+      { name: 'Initech Financial', notes: 'Dormant account inactive for 45 days. High manual friction identified; deferred terms offered.', stage: 'MEDDPICC Gap Resolution' },
+      { name: 'Apex Defense Corp', notes: 'CFO sponsor aligned. Final MSA procurement review underway; SOC2 compliance cleared.', stage: 'Pricing & Contract Nudge' }
+    ];
+
+    const target = sampleAccounts[Math.floor(Math.random() * sampleAccounts.length)];
+    const dealValue = Math.floor(Math.random() * 400) * 1000 + 75000;
+
+    addLog(`[PIPELINE INGEST] Syncing account: ${target.name} ($${dealValue.toLocaleString()})`);
+
+    try {
+      const result = await evaluateMeddpiccWithHeuristicEngine(
+        {
+          prospectName: target.name,
+          dealStage: target.stage,
+          dealNotes: target.notes,
+          value: dealValue
+        },
+        activeAgent,
+        msg => addLog(msg)
+      );
+
+      const sourceLabel = result.source === 'live_api'
+        ? `Live API (${result.modelUsed || 'Gemini 2.5'})`
+        : `Local Deterministic Engine`;
+
+      addLog(`[QUALIFICATION] ${target.name} evaluated via ${sourceLabel} -> Score: ${result.overallScore}/100 (Grade ${result.grade})`);
+
+      if (result.singlePointFailures && result.singlePointFailures.length > 0) {
+        addLog(`[RISK FLAGGED] ${result.singlePointFailures[0]}`);
+      }
+
+      if (result.surgicalRecommendations && result.surgicalRecommendations.length > 0) {
+        addLog(`[SURGICAL ACTION] ${result.surgicalRecommendations[0]}`);
+      }
+
+      const generatedRoi = result.estimatedRoi || Math.floor(Math.random() * 300) + 150;
+      updateWorkerMetrics(prev => ({
+        dealsAudited: prev.dealsAudited + 1,
+        emailsDispatched: prev.emailsDispatched + 1,
+        clientROI: prev.clientROI + generatedRoi
+      }));
+
+      showToast(`Audited ${target.name} via ${result.source === 'live_api' ? 'Live API' : 'Local Heuristic Engine'}.`, 'success');
+    } catch (err: any) {
+      addLog(`[HEURISTIC FALLBACK] Unhandled interruption (${err.message}). Defaulting to local deterministic evaluation.`);
+      const fallback = calculateLocalDeterministicMeddpicc(
+        { prospectName: target.name, dealStage: target.stage, dealNotes: target.notes, value: dealValue },
+        activeAgent
+      );
+      updateWorkerMetrics(prev => ({
+        dealsAudited: prev.dealsAudited + 1,
+        emailsDispatched: prev.emailsDispatched + 1,
+        clientROI: prev.clientROI + fallback.estimatedRoi
+      }));
     }
+  };
 
-    const companies = ['Acme Corp', 'Starlight Health', 'Globex', 'Soylent Corp', 'Initech'];
-    const company = companies[Math.floor(Math.random() * companies.length)];
-    const dealValue = Math.floor(Math.random() * 500) * 1000 + 50000;
-    const roiGen = Math.floor(Math.random() * 300) + 150;
-
-    const agentName = activeAgent?.name || 'Enterprise Deal Closer';
-
-    if (agentName === 'Enterprise Deal Closer' || agentName === 'Aegis-Closer') {
-      addLog(`[MEDDPICC AUDIT] Evaluating ${company} against M, E, D, D, P, I, C, C qualification pillars...`);
-      setTimeout(() => {
-        addLog(`[RISK AUDIT] Single-point failure flagged: Strong Champion with unconfirmed Economic Buyer access.`);
-        setTimeout(() => {
-          addLog(`[SURGICAL ACTION] Executive risk mitigation strategy & follow-up questions drafted -> ROI: +$${roiGen}`);
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-          showToast(`MEDDPICC audit complete for ${company}. Deal qualification risks mitigated.`, 'success');
-        }, 1000);
-      }, 1000);
-    } else if (agentName === 'Technical Discovery Specialist' || agentName === 'Dragon-Prospector-X') {
-      addLog(`[TECH DEEP-DIVE] Parsing API integration specs and architecture compliance for ${company}...`);
-      setTimeout(() => {
-        addLog(`[SECURITY VALIDATION] Validating zero-trust VPC peering, SSO SAML specs, and PoC benchmarks.`);
-        setTimeout(() => {
-          addLog(`[CLEARANCE COMPLETE] Deep technical friction resolved -> Architecture Validation Approved | ROI: +$${roiGen}`);
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-          showToast(`Technical discovery passed for ${company}. Architecture compliance cleared.`, 'success');
-        }, 1000);
-      }, 1000);
-    } else if (agentName === 'Executive Outreach Strategist' || agentName === 'RevenueEngine-AE') {
-      addLog(`[EXEC RESEARCH] Web Search scanning ${company} strategic initiatives and executive transitions...`);
-      setTimeout(() => {
-        addLog(`[STRATEGIC POSITIONING] Framing collaborative partnership around long-term business vision.`);
-        setTimeout(() => {
-          addLog(`[OUTBOUND DISPATCH] Persuasive C-suite executive outreach dispatched -> High-converting engagement booked | ROI: +$${roiGen}`);
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-          showToast(`Executive outreach dispatched to ${company} leadership. Engagement secured.`, 'success');
-        }, 1000);
-      }, 1000);
-    } else if (agentName === 'Aegis-Inbound-SDR') {
-      addLog(`[INBOUND DETECTED] Lead inbound from ${company} -> Parsing BANT qualification fields...`);
-      setTimeout(() => {
-        addLog(`[WEB RESEARCH] Verified ${company} headcount & tech stack -> Authority score: 94/100.`);
-        setTimeout(() => {
-          addLog(`[CALENDAR DISPATCH] Scheduling link sent -> Stage updated: 'Discovery Booked' | ROI: +$${roiGen}`);
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-          showToast(`Inbound lead at ${company} qualified and meeting booked.`, 'success');
-        }, 1000);
-      }, 1000);
-    } else if (agentName === 'Dragon-Battlecard-AI') {
-      addLog(`[COMPETITIVE RADAR] Scanning deal notes for competitor displacement vectors at ${company}...`);
-      setTimeout(() => {
-        addLog(`[LANDMINE GEN] Formulating 3 strategic trap questions & TCO matrix vs incumbent.`);
-        setTimeout(() => {
-          addLog(`[CRM ENRICH] Battlecard attached to ${company} record -> Objection countered | +$${roiGen} Value`);
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-          showToast(`Battlecard generated for ${company}. Incumbent displacement armed.`, 'success');
-        }, 1000);
-      }, 1000);
-    } else if (agentName === 'Aegis-PaperProcess-Navigator') {
-      addLog(`[PROCUREMENT AUDIT] Auditing sign-off chain for ${company} -> Reviewing InfoSec questionnaire...`);
-      setTimeout(() => {
-        addLog(`[COMPLIANCE DISPATCH] Pre-filled SOC2 & ISO 27001 pack routed to ${company} Legal Champion.`);
-        setTimeout(() => {
-          addLog(`[STAGE ADVANCE] Procurement roadblock cleared -> Paper process acceleration: +$${roiGen}`);
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-          showToast(`InfoSec cleared for ${company}. Closing timeline accelerated.`, 'success');
-        }, 1000);
-      }, 1000);
-    } else if (agentName === 'RevenueEngine-Revival-Copilot') {
-      addLog(`[DORMANT SCAN] Flagged ${company} (inactive 30+ days) -> Searching recent market events...`);
-      setTimeout(() => {
-        addLog(`[TRIGGER HOOK] Found recent executive expansion -> Drafting 9-word re-activation hook.`);
-        setTimeout(() => {
-          addLog(`[REVIVAL DISPATCH] Deferred pricing proposal sent to ${company} -> Pipeline revived | +$${roiGen}`);
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-          showToast(`Stalled deal at ${company} re-engaged with deferred terms.`, 'success');
-        }, 1000);
-      }, 1000);
-    } else {
-      addLog(`[CRM SYNC] Ingesting deal record: ${company} ($${dealValue.toLocaleString()}) -> Checking schema...`);
-      setTimeout(() => {
-        addLog(`[RISK AUDIT] GAP DETECTED: Evaluating MEDDPICC criteria based on ${activeAgent?.archetype} persona.`);
-        setTimeout(() => {
-          addLog(`[API DISPATCH] Outreach queued via Resend API -> Deals Audited: +1 | Client ROI: +$${roiGen}`);
-          
-          updateWorkerMetrics(prev => ({
-            dealsAudited: prev.dealsAudited + 1,
-            emailsDispatched: prev.emailsDispatched + 1,
-            clientROI: prev.clientROI + roiGen
-          }));
-
-          showToast(`Successfully audited ${company}. +$${roiGen} ROI logged.`, 'success');
-        }, 1000);
-      }, 1000);
+  // Run interactive MEDDPICC audit for the selected deal
+  const handleRunAudit = async () => {
+    setIsAuditing(true);
+    addLog(`[MANUAL AUDIT] Initiating MEDDPICC qualification check for ${prospectName || 'Target Account'}...`);
+    try {
+      const result = await evaluateMeddpiccWithHeuristicEngine(
+        {
+          prospectName: prospectName || 'Target Account',
+          dealStage,
+          dealNotes: dealNotes || 'Evaluating pipeline opportunity.',
+          value: 150000
+        },
+        activeAgent,
+        msg => addLog(msg)
+      );
+      setCurrentAudit(result);
+      showToast(
+        `MEDDPICC audit complete via ${result.source === 'live_api' ? 'Live Gemini API' : 'Local Deterministic Engine'} (${result.overallScore}/100)`,
+        'success'
+      );
+    } catch (err: any) {
+      addLog(`[AUDIT FALLBACK] Error in live route (${err.message}). Executing local deterministic scoring.`);
+      const fallback = calculateLocalDeterministicMeddpicc(
+        { prospectName, dealStage, dealNotes, value: 150000 },
+        activeAgent
+      );
+      setCurrentAudit(fallback);
+      showToast('Completed via Local Deterministic Engine', 'success');
+    } finally {
+      setIsAuditing(false);
     }
+  };
+
+  // Apply audit findings to generate a tailored outreach sequence
+  const handleApplyGapsToOutreach = () => {
+    if (!currentAudit) return;
+    const gaps = Object.values(currentAudit.pillars).filter(p => p.gap);
+    const gapList = gaps.length > 0
+      ? gaps.map(g => `• ${g.name}: ${g.finding}\n  ↳ Proposed Resolution: ${g.recommendation}`).join('\n')
+      : '• All 8 qualification pillars cleared. Proceeding to commercial closing terms.';
+
+    const failureAlerts = currentAudit.singlePointFailures && currentAudit.singlePointFailures.length > 0
+      ? `=== CRITICAL SINGLE-POINT FAILURE RISKS ===\n${currentAudit.singlePointFailures.map(f => `⚠️ ${f}`).join('\n')}\n\n`
+      : '';
+
+    const draft = `Subject: Executive Qualification Alignment & Risk Mitigation: ${prospectName}
+
+Hi ${prospectName} Leadership Team,
+
+Following our pipeline qualification review using the MEDDPICC framework (Overall Composite Score: ${currentAudit.overallScore}/100 - Grade ${currentAudit.grade} [${currentAudit.qualificationStatus}]):
+
+${failureAlerts}=== MEDDPICC PILLAR GAP ANALYSIS ===
+${gapList}
+
+=== SURGICAL NEXT-STEP ROADMAP ===
+${currentAudit.surgicalRecommendations.map((rec, i) => `${i + 1}. ${rec}`).join('\n')}
+
+Let's schedule a brief 15-minute executive checkpoint this week to confirm these parameters and safeguard our target launch timeline.
+
+Best regards,
+${activeAgent?.name}
+${activeAgent?.role}
+${activeAgent?.archetype ? `(${activeAgent.archetype})` : ''}`;
+
+    setOutreachDraft(draft);
+    showToast('Outreach draft generated with MEDDPICC gap resolutions', 'success');
   };
 
   const generateOutreach = () => {
@@ -401,14 +486,93 @@ ${activeAgent?.name}`);
         </div>
       </header>
 
-      <div className="grid lg:grid-cols-[1fr_1fr] gap-8">
+      {/* Heuristic Engine & Connectivity Control Bar */}
+      <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-slate-800 border border-white/10 flex items-center justify-center shrink-0">
+            {networkStatus.effectiveMode === 'live_api' ? (
+              <Globe className="w-5 h-5 text-emerald-400" />
+            ) : (
+              <Cpu className="w-5 h-5 text-amber-400" />
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm text-white">Heuristic Engine:</span>
+              {networkStatus.effectiveMode === 'live_api' ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Live Gemini 2.5 API Active
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                  Local Deterministic Engine Active
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {networkStatus.effectiveMode === 'live_api'
+                ? `Active connection to Cloud Run Gemini API (${networkStatus.latencyMs ? `${networkStatus.latencyMs}ms latency` : 'network online'})`
+                : 'Zero-latency deterministic MEDDPICC mathematical rubric active (fully offline resilient)'}
+            </p>
+          </div>
+        </div>
+
+        {/* Mode Selector and Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="bg-slate-950/60 p-1 rounded-xl border border-white/10 flex items-center gap-1 text-xs">
+            <button
+              onClick={() => handleModeSwitch('auto')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                heuristicMode === 'auto'
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Auto-Adaptive
+            </button>
+            <button
+              onClick={() => handleModeSwitch('force_live')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                heuristicMode === 'force_live'
+                  ? 'bg-emerald-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Force Live API
+            </button>
+            <button
+              onClick={() => handleModeSwitch('force_local')}
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
+                heuristicMode === 'force_local'
+                  ? 'bg-amber-600 text-white shadow-lg'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Force Local Offline
+            </button>
+          </div>
+
+          <button
+            onClick={handleManualPing}
+            disabled={isPinging}
+            title="Probe connection latency"
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 ${isPinging ? 'animate-spin text-indigo-400' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8">
         
-        {/* Left Column: Outreach Generator */}
+        {/* Left Column: Outreach Generator & MEDDPICC Matrix */}
         <div className="space-y-6">
           <div className="bg-slate-900/60 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/10 space-y-6">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                <Mail className="w-5 h-5 text-indigo-400" /> Outreach Generator
+                <Mail className="w-5 h-5 text-indigo-400" /> Outreach & MEDDPICC Deal Auditor
               </h2>
               <button onClick={() => setActiveView('aegis')} className="text-sm text-indigo-400 hover:text-indigo-300">
                 Edit Persona in Aegis
@@ -448,6 +612,22 @@ ${activeAgent?.name}`);
               <label className="text-sm font-medium text-slate-400">MEDDPICC Notes / Gaps</label>
               <textarea value={dealNotes} onChange={e => setDealNotes(e.target.value)} rows={3} className="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500" />
             </div>
+
+            {/* Heuristic Audit Quick Action */}
+            <div className="p-3 bg-slate-950/40 border border-white/5 rounded-xl flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs text-slate-300">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Audit deal with the {networkStatus.effectiveMode === 'live_api' ? 'Live Gemini 2.5 API' : 'Local Deterministic Engine'}</span>
+              </div>
+              <button
+                onClick={handleRunAudit}
+                disabled={isAuditing}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-white/10 text-white rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+              >
+                {isAuditing ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" /> : <Zap className="w-3.5 h-3.5 text-amber-400" />}
+                Run MEDDPICC Audit
+              </button>
+            </div>
             
             <div className="flex gap-3">
               <button onClick={saveDeal} className="flex-[1] bg-slate-800 hover:bg-slate-700 text-white py-3 px-4 rounded-xl font-medium transition-colors border border-white/10 text-sm">
@@ -482,11 +662,19 @@ ${activeAgent?.name}`);
               </div>
             )}
           </div>
+
+          {/* Real-Time MEDDPICC Heuristic Audit Matrix */}
+          {currentAudit && (
+            <MeddpiccMatrix
+              auditResult={currentAudit}
+              onApplyGapsToOutreach={handleApplyGapsToOutreach}
+            />
+          )}
         </div>
 
         {/* Right Column: Autonomous Worker Terminal */}
         <div className="space-y-6">
-          <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 flex flex-col h-[600px] overflow-hidden">
+          <div className="bg-slate-900/60 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 flex flex-col h-[650px] overflow-hidden">
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-900">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Terminal className="w-5 h-5 text-emerald-400" />

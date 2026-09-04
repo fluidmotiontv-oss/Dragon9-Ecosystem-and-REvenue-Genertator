@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useEcosystem } from '../store';
 import { ViewState } from '../types/ecosystem';
-import { ChevronDown, Bot, Users, Key, Rocket, Server, Activity, Wifi, WifiOff, Download, MonitorDown } from 'lucide-react';
+import { ChevronDown, Bot, Users, Key, Rocket, Server, Activity, Wifi, WifiOff, Download, MonitorDown, ExternalLink } from 'lucide-react';
 
 export default function CommandBar({ onOpenRoster }: { onOpenRoster: () => void }) {
   const { activeView, setActiveView, activeAgent } = useEcosystem();
@@ -131,6 +131,28 @@ export default function CommandBar({ onOpenRoster }: { onOpenRoster: () => void 
               Install App
             </motion.button>
           )}
+
+          <a
+            href="https://aegis-agent-generator.ai.studio/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden xl:flex items-center gap-1.5 px-3 py-2 bg-slate-900/80 backdrop-blur-md border border-indigo-500/30 hover:border-indigo-500/50 hover:bg-indigo-500/10 rounded-xl text-indigo-300 hover:text-indigo-200 shadow-xl transition-all text-xs font-medium"
+            title="Open deployed AI Studio applet"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+            <span>aegis-agent-generator.ai.studio</span>
+          </a>
+
+          <a
+            href="https://dragon9-ecosystem-612293447363.asia-southeast1.run.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-2 bg-slate-900/80 backdrop-blur-md border border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/10 rounded-xl text-purple-300 hover:text-purple-200 shadow-xl transition-all text-xs font-medium"
+            title="Open production Cloud Run gateway"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-purple-400" />
+            <span>dragon9-ecosystem.run.app</span>
+          </a>
 
           <motion.button
             whileHover={{ scale: 1.05 }}
