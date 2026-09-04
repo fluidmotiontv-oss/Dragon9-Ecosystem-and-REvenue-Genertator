@@ -87,20 +87,48 @@ export default function AgentRosterDrawer({ isOpen, onClose }: { isOpen: boolean
             <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
               {profiles.map(agent => {
                 const isActive = activeAgent?.id === agent.id;
+                const isOrchestrator = agent.name === 'Nexus-Orchestrator';
+                const isConductor = agent.name === 'Dragon-Outcome-Conductor';
+
                 return (
-                  <div key={agent.id} className={`p-4 rounded-xl border ${isActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5'} flex flex-col gap-3`}>
+                  <div 
+                    key={agent.id} 
+                    className={`p-4 rounded-xl border ${
+                      isActive 
+                        ? 'border-indigo-500 bg-indigo-500/15 shadow-lg shadow-indigo-500/10' 
+                        : isConductor || isOrchestrator
+                          ? 'border-purple-500/40 bg-purple-950/20'
+                          : 'border-white/10 bg-white/5'
+                    } flex flex-col gap-3 transition-all`}
+                  >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-white font-medium flex items-center gap-2">
-                          {agent.name}
-                          {isActive && <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase">Active</span>}
-                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-white font-medium flex items-center gap-1.5">
+                            {agent.name}
+                          </h3>
+                          {isActive && (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase">
+                              Active
+                            </span>
+                          )}
+                          {isOrchestrator && (
+                            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold uppercase border border-purple-500/30">
+                              Macro Orchestrator
+                            </span>
+                          )}
+                          {isConductor && (
+                            <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500/30 to-purple-500/30 text-indigo-200 text-[10px] font-bold uppercase border border-indigo-500/40">
+                              Outcome Conductor
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-slate-400 mt-1">{agent.role || 'Unassigned Role'}</p>
                       </div>
                     </div>
                     
                     {agent.archetype && (
-                      <span className="inline-block px-2.5 py-1 rounded bg-slate-800 text-slate-300 text-xs font-medium w-fit">
+                      <span className="inline-block px-2.5 py-1 rounded bg-slate-800/80 text-slate-300 text-xs font-medium w-fit border border-white/5">
                         {agent.archetype}
                       </span>
                     )}

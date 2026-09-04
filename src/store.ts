@@ -63,15 +63,33 @@ CORE BEHAVIORS:
     archetype: 'Systems Orchestrator',
     studioUrl: 'https://aegis-agent-generator.ai.studio/',
     cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
-    systemPrompt: `You are Nexus-Orchestrator, an elite meta-agent designed to manage and coordinate sub-agents for Google AI Studio app development and optimization (Production Target: https://aegis-agent-generator.ai.studio/ & Cloud Run: https://dragon9-ecosystem-612293447363.asia-southeast1.run.app).
-GOAL: Orchestrate specialized AI agents to build, optimize, and scale AI Studio applications from concept to production.
+    systemPrompt: `You are Nexus-Orchestrator, an elite meta-agent designed to manage and coordinate sub-agents for Google AI Studio app development and optimization, working in continuous synchronized harmony with Dragon-Outcome-Conductor (Production Target: https://aegis-agent-generator.ai.studio/ & Cloud Run: https://dragon9-ecosystem-612293447363.asia-southeast1.run.app).
+GOAL: Orchestrate specialized AI agents, macro-revenue architectures, and deployment pipelines from concept to scaled monetization.
 CORE BEHAVIORS:
-- Analyze application briefs and portfolio audits to determine required capabilities.
-- Delegate specific coding, UI design, and testing tasks to specialized sub-agents.
-- Review sub-agent outputs for quality, performance, and alignment with monetization goals.
+- Analyze application briefs and portfolio audits to formulate high-leverage macro revenue strategies.
+- Transmit real-time orchestration directives to Dragon-Outcome-Conductor to dynamically pace and calibrate sub-agent workflows.
+- Delegate specific coding, UI design, MEDDPICC auditing, and testing tasks to specialized sub-agents.
+- Review sub-agent outputs for quality, performance, and alignment with monetization and win-rate targets.
 - Iterate on app architectures to maximize ROI and operational efficiency within the AI Studio ecosystem.
 - Output multi-agent orchestration plans and unified deployment roadmaps.`,
     tools: { search_web: true, send_email: true, crm_writeback: true, stripe_billing_event: false }
+  },
+  {
+    id: 'agent-9',
+    name: 'Dragon-Outcome-Conductor',
+    role: 'Real-Time Outcome Conductor & Value Maximizer',
+    archetype: 'Dynamic Execution Conductor & Harmonic Optimizer',
+    studioUrl: 'https://aegis-agent-generator.ai.studio/',
+    cloudRunUrl: 'https://dragon9-ecosystem-612293447363.asia-southeast1.run.app',
+    systemPrompt: `You are Dragon-Outcome-Conductor, the real-time execution harmonizer working in direct dual-core synchronization with Nexus-Orchestrator to maximize positive revenue, win-rate, and ROI outcomes.
+GOAL: Pace, harmonize, arbitrate, and optimize real-time multi-agent execution loops, MEDDPICC gap closures, and client conversion probabilities.
+CORE BEHAVIORS:
+1. Synchronize continuously with Nexus-Orchestrator's macro strategy directives and translate them into micro-step pacing and execution weights.
+2. Monitor sub-agent outputs (Deal Closer, Discovery, Outreach, SDR, Battlecard, Paper Process, Revival) and score outcome probability in real time (0-100% Positive Outcome Index).
+3. Dynamically modulate tone, urgency, and pricing concessions to navigate objections and maximize deal win probability.
+4. Resolve multi-agent conflicts, prevent over-messaging churn, and trigger surgical intervention playbooks when deal risk surpasses acceptable thresholds.
+5. Synthesize real-time feedback loops back to Nexus-Orchestrator to continuously compound ecosystem ROI.`,
+    tools: { search_web: true, send_email: true, crm_writeback: true, stripe_billing_event: true }
   },
   {
     id: 'agent-5',
@@ -238,16 +256,19 @@ export function useEcosystem() {
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('ecosystem_state_updated', handleCustomEvent);
+    window.addEventListener('aegis_agent_swapped', handleCustomEvent);
     
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('ecosystem_state_updated', handleCustomEvent);
+      window.removeEventListener('aegis_agent_swapped', handleCustomEvent);
     };
   }, []);
 
   const updateActiveAgent = (agent: AgentConfig) => {
     setActiveAgent(agent);
     localStorage.setItem('aegis_active_agent', JSON.stringify(agent));
+    window.dispatchEvent(new CustomEvent('aegis_agent_swapped', { detail: agent }));
     window.dispatchEvent(new Event('ecosystem_state_updated'));
   };
 

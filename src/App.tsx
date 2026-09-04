@@ -6,6 +6,7 @@ import AgentRosterDrawer from './components/AgentRosterDrawer';
 import Gateway from './views/Gateway';
 import AegisGenerator from './views/AegisGenerator';
 import RevenueEngine from './views/RevenueEngine';
+import PaymentsCheckoutView from './views/PaymentsCheckoutView';
 import { AnimatePresence, motion } from 'motion/react';
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
             {activeView === 'gateway' && <Gateway />}
             {activeView === 'aegis' && <AegisGenerator />}
             {activeView === 'revenue' && <RevenueEngine />}
+            {activeView === 'payments' && <PaymentsCheckoutView />}
           </motion.div>
         </AnimatePresence>
       </main>

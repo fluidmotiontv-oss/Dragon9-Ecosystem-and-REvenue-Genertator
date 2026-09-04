@@ -5,7 +5,8 @@ import {
   FileSearch, LogOut, Loader2, Sparkles, FolderOpen, ChevronRight, HardDrive, 
   ListPlus, Trash2, Plus, Code2, FolderSync, ArrowRight, ExternalLink,
   CheckSquare, Square, Play, RefreshCw, CheckCircle2, Clock, AlertTriangle,
-  Download, FileText, Filter, ListTodo, Layers, Server, Zap, Bot, Activity, Compass
+  Download, FileText, Filter, ListTodo, Layers, Server, Zap, Bot, Activity, Compass,
+  CreditCard, ShieldCheck
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { useEcosystem } from '../store';
@@ -505,7 +506,15 @@ ${auditTasks.map(t => `### [${t.status === 'completed' ? 'x' : ' '}] [${t.priori
           </h1>
           <p className="text-slate-400 mt-2">Asset Auditor & Monetization Strategist</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveView('payments')}
+            className="flex items-center gap-2 px-3.5 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl text-xs font-bold shadow-lg transition-all border border-white/10"
+            title="Open real PayPal gateway & accept all payment methods (Ref #165059)"
+          >
+            <CreditCard className="w-4 h-4 text-emerald-300" />
+            <span>PayPal & Checkout (#165059)</span>
+          </button>
           <span className="text-sm font-medium text-slate-300 bg-slate-800/50 border border-white/10 px-4 py-2 rounded-full">
             {user?.email}
           </span>

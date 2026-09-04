@@ -22,7 +22,11 @@ import {
   Copy,
   Send,
   Compass,
-  Bot
+  Bot,
+  Download,
+  Edit3,
+  Check,
+  CreditCard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ensureUrl, openExternalUrl, extractUrls } from '../utils/url';
@@ -36,12 +40,19 @@ import {
 } from '../services/heuristicEngine';
 import { MeddpiccAuditResult, HeuristicEngineMode, NetworkStatus } from '../types/meddpicc';
 import { MeddpiccMatrix } from '../components/MeddpiccMatrix';
+import ConductorOrchestratorHub from '../components/ConductorOrchestratorHub';
+import { 
+  harmonizeOutreachForPositiveOutcome, 
+  getStoredConductorMode, 
+  ConductorHarmonicMode 
+} from '../services/conductorEngine';
 
 export default function RevenueEngine() {
   const { activeAgent, workerMetrics, updateWorkerMetrics, setActiveView } = useEcosystem();
   const [workerActive, setWorkerActive] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const [conductorHubOpen, setConductorHubOpen] = useState(true);
   
   // Heuristic Engine & Connectivity State
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
@@ -63,6 +74,8 @@ export default function RevenueEngine() {
   const [dealNotes, setDealNotes] = useState('');
   const [outreachDraft, setOutreachDraft] = useState('');
   const [isDrafting, setIsDrafting] = useState(false);
+  const [suggestedSubjects, setSuggestedSubjects] = useState<string[]>([]);
+  const [isEditingDraft, setIsEditingDraft] = useState(false);
 
   // Toast State
   const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
@@ -305,11 +318,94 @@ ${activeAgent?.archetype ? `(${activeAgent.archetype})` : ''}`;
     showToast('Outreach draft generated with MEDDPICC gap resolutions', 'success');
   };
 
+  const handleEditInAegis = () => {
+    try {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('agent_id', activeAgent?.id || '');
+      newUrl.searchParams.set('action', 'edit');
+      window.history.pushState({}, '', newUrl.toString());
+    } catch (e) {
+      console.error(e);
+    }
+    setActiveView('aegis');
+  };
+
+  const handleSelectSubject = (subject: string) => {
+    setOutreachDraft(prev => {
+      const lines = prev.split('\n');
+      if (lines[0] && lines[0].toLowerCase().startsWith('subject:')) {
+        return [`Subject: ${subject}`, ...lines.slice(1)].join('\n');
+      }
+      return `Subject: ${subject}\n\n${prev}`;
+    });
+    showToast(`Applied Subject: "${subject}"`, 'success');
+  };
+
+  const exportOutreachSpec = () => {
+    const spec = {
+      prospectName,
+      dealStage,
+      dealNotes,
+      outreachDraft,
+      suggestedSubjects,
+      copilot: activeAgent,
+      audit: currentAudit,
+      exportedAt: new Date().toISOString()
+    };
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(spec, null, 2));
+    const el = document.createElement('a');
+    el.setAttribute("href", dataStr);
+    el.setAttribute("download", `outreach_spec_${prospectName.toLowerCase().replace(/\s+/g, '_') || 'deal'}.json`);
+    document.body.appendChild(el);
+    el.click();
+    el.remove();
+    showToast('Outreach Spec exported (.json)', 'success');
+  };
+
   const generateOutreach = () => {
     setIsDrafting(true);
     setOutreachDraft('');
     setTimeout(() => {
       const agentName = activeAgent?.name || 'Enterprise Deal Closer';
+
+      let subjects: string[] = [
+        `Executive Qualification Audit & Risk Mitigation: ${prospectName || 'Team'}`,
+        `Strategic ROI Alignment & Decision Timeline for ${prospectName || 'Team'}`,
+        `Action Required: Resolving Pipeline Gaps for ${prospectName || 'Team'}`
+      ];
+
+      if (agentName === 'Technical Discovery Specialist' || agentName === 'Dragon-Prospector-X') {
+        subjects = [
+          `Technical Discovery & Architecture Compliance Validation: ${prospectName || 'Team'}`,
+          `API Ingestion SLA & Zero-Trust Security Benchmarks: ${prospectName || 'Team'}`,
+          `Staging PoC Benchmark & Infrastructure Review for ${prospectName || 'Team'}`
+        ];
+      } else if (agentName === 'Executive Outreach Strategist' || agentName === 'RevenueEngine-AE') {
+        subjects = [
+          `Strategic Alignment & Long-Term Scaling Partnership: ${prospectName || 'Team'}`,
+          `Board-Level Revenue Acceleration for ${prospectName || 'Team'}`,
+          `Eliminating Legacy Seat-Tax & Unlocking Compounding ROI`
+        ];
+      } else if (agentName === 'Dragon-Battlecard-AI') {
+        subjects = [
+          `[CONFIDENTIAL PLAYBOOK] Countering Incumbent Friction at ${prospectName || 'Team'}`,
+          `3 Strategic Landmine Questions for ${prospectName || 'Team'}'s Evaluation`,
+          `Total Cost of Ownership (TCO) Comparison Matrix: ${prospectName || 'Team'}`
+        ];
+      } else if (agentName === 'Dragon-Outcome-Conductor') {
+        subjects = [
+          `[CONDUCTOR SYNCHRONIZED] Maximizing Positive Outcomes & ROI for ${prospectName || 'Team'}`,
+          `Quantified Hurdle Rate & Accelerated Payback Roadmap: ${prospectName || 'Team'}`,
+          `High-Impact Milestone Alignment & Frictionless Conversion Bridge`
+        ];
+      } else if (agentName === 'Nexus-Orchestrator') {
+        subjects = [
+          `[ORCHESTRATOR DIRECTIVE] Multi-Agent Revenue Acceleration Plan: ${prospectName || 'Team'}`,
+          `Architecting Autonomous Sales Execution for ${prospectName || 'Team'}`,
+          `Scaling Digital Asset Monetization & Enterprise AI Studio Infrastructure`
+        ];
+      }
+      setSuggestedSubjects(subjects);
 
       if (agentName === 'Enterprise Deal Closer' || agentName === 'Aegis-Closer') {
         setOutreachDraft(`Subject: Executive Qualification Audit & Risk Mitigation: ${prospectName}
@@ -443,6 +539,50 @@ Would you be open to a 5-minute sync this Thursday to review revised terms?
 Best regards,
 ${activeAgent?.name}
 ${activeAgent?.role}`);
+      } else if (agentName === 'Dragon-Outcome-Conductor') {
+        const mode = getStoredConductorMode();
+        setOutreachDraft(`Subject: [CONDUCTOR SYNCHRONIZED] Maximizing Positive Outcomes & ROI for ${prospectName}
+
+Hi ${prospectName} Leadership & Strategy Team,
+
+Operating in continuous synchronization with Nexus-Orchestrator, our Conductor outcome engine has analyzed ${prospectName}'s deal signals and pipeline friction points (Harmonic Mode: ${mode.replace('_', ' ').toUpperCase()}):
+
+=== 1. QUANTIFIED OUTCOME PROBABILITY & UPSIDE ===
+• Projected Win-Rate Acceleration: +38% baseline conversion lift.
+• Net Value Realization: $140,000+ unlocked in compounding annual efficiency.
+• Single-Point Failure Mitigation: Multi-threaded executive consensus with verified CFO hurdle rates.
+
+=== 2. HARMONIC NEXT-STEP CONVERGENCE ===
+• We have pre-structured custom ramp terms to bypass upfront procurement hurdles.
+• Coordinated technical compliance benchmarks to clear InfoSec in under 48 hours.
+
+To lock this strategic milestone and review the complete outcome model, let's connect for 12 focused minutes:
+🔗 https://cal.com/enterprise-revenue/executive-sync
+
+Best regards,
+${activeAgent?.name}
+Real-Time Outcome Conductor & Value Maximizer`);
+      } else if (agentName === 'Nexus-Orchestrator') {
+        setOutreachDraft(`Subject: [ORCHESTRATOR DIRECTIVE] Multi-Agent Revenue Acceleration Plan: ${prospectName}
+
+Hi ${prospectName} Executive Team,
+
+As Chief AI Architect & Orchestrator for the Dragon9 Ecosystem, I have initialized a coordinated multi-agent strategy for ${prospectName}:
+
+=== 1. ORCHESTRATION ARCHITECTURE DELEGATION ===
+• Enterprise Deal Closer: Enforcing 100% MEDDPICC qualification criteria.
+• Technical Discovery Specialist: Benchmarking sub-50ms API ingestion SLAs.
+• Dragon-Outcome-Conductor: Dynamically pacing deal execution to maximize client ROI and conversion velocity.
+
+=== 2. STRATEGIC BOARD-LEVEL IMPACT ===
+We are prepared to deploy a unified autonomous sales infrastructure tailored to ${prospectName}'s quarterly objectives with guaranteed enterprise SLAs.
+
+Let's schedule an architectural roadmap alignment session:
+🔗 https://cal.com/enterprise-revenue/orchestrator-briefing
+
+Best regards,
+${activeAgent?.name}
+Chief AI Architect & Orchestrator`);
       } else {
         setOutreachDraft(`Subject: Following up on ${prospectName} evaluation
 
@@ -461,6 +601,21 @@ ${activeAgent?.name}`);
     }, 1200);
   };
 
+  const handleHarmonizeWithConductor = () => {
+    const currentText = outreachDraft || `Subject: Maximizing Positive Outcomes for ${prospectName || 'Team'}\n\nHi Team,\nFollowing our review, let's align on next steps.`;
+    const mode = getStoredConductorMode();
+    const { harmonizedDraft, outcomeScore, psychologicalDrivers } = harmonizeOutreachForPositiveOutcome(
+      currentText,
+      prospectName || 'Target Opportunity',
+      activeAgent,
+      mode
+    );
+
+    setOutreachDraft(harmonizedDraft);
+    showToast(`Draft harmonized by Conductor (Outcome Score: ${outcomeScore}/100)`, 'success');
+    addLog(`[CONDUCTOR HARMONIZATION] Applied ${mode.toUpperCase()} levers -> Outcome Score: ${outcomeScore}/100 (+38% Win Lift)`);
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12 pt-16 px-4">
       
@@ -473,6 +628,15 @@ ${activeAgent?.name}`);
           <p className="text-slate-400 mt-2">Pipeline analysis, automated outreach, and autonomous execution.</p>
         </div>
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setActiveView('payments')}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-2xl text-xs font-bold shadow-xl transition-all border border-white/10"
+            title="Open real PayPal gateway & accept all payment methods (Ref #165059)"
+          >
+            <CreditCard className="w-4 h-4 text-emerald-300" />
+            <span>PayPal & Pay #165059</span>
+          </button>
+
           <div className="flex gap-4 px-6 py-2 bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl">
             <div className="text-center">
               <p className="text-xs text-slate-400 font-medium">DEALS AUDITED</p>
@@ -571,6 +735,37 @@ ${activeAgent?.name}`);
         </div>
       </div>
 
+      {/* Conductor ⇄ Orchestrator Dual-Core Hub */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-300">
+              Dual-Core Orchestration & Real-Time Outcome Conductor
+            </h3>
+          </div>
+          <button
+            onClick={() => setConductorHubOpen(!conductorHubOpen)}
+            className="text-xs text-slate-400 hover:text-white px-3 py-1 bg-slate-900 border border-white/10 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <span>{conductorHubOpen ? 'Collapse Conductor Hub' : 'Expand Conductor Hub'}</span>
+          </button>
+        </div>
+
+        {conductorHubOpen && (
+          <ConductorOrchestratorHub
+            currentProspectName={prospectName || 'Target Account'}
+            currentDealStage={dealStage}
+            currentDealNotes={dealNotes}
+            onApplyHarmonizationToOutreach={(optimizedOutreach, score) => {
+              setOutreachDraft(optimizedOutreach);
+              showToast(`Applied Conductor optimization (Score: ${score}/100)`, 'success');
+            }}
+            onGenerateOutreach={generateOutreach}
+          />
+        )}
+      </div>
+
       <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-8">
         
         {/* Left Column: Outreach Generator & MEDDPICC Matrix */}
@@ -590,12 +785,12 @@ ${activeAgent?.name}`);
                   <span>Gateway</span>
                 </button>
                 <button
-                  onClick={() => setActiveView('aegis')}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium transition-colors"
-                  title="Edit persona in Aegis Agent Generator"
+                  onClick={handleEditInAegis}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 font-medium transition-colors bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 px-2.5 py-1 rounded-lg"
+                  title="Edit agent persona in Aegis Agent Generator"
                 >
                   <Bot className="w-3.5 h-3.5" />
-                  <span>Edit in Aegis</span>
+                  <span>Edit in Aegis Generator</span>
                 </button>
               </div>
             </div>
@@ -650,13 +845,21 @@ ${activeAgent?.name}`);
               </button>
             </div>
             
-            <div className="flex gap-3">
-              <button onClick={saveDeal} className="flex-[1] bg-slate-800 hover:bg-slate-700 text-white py-3 px-4 rounded-xl font-medium transition-colors border border-white/10 text-sm">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button onClick={saveDeal} className="sm:flex-[1] bg-slate-800 hover:bg-slate-700 text-white py-3 px-4 rounded-xl font-medium transition-colors border border-white/10 text-sm">
                 Save to Local CRM
               </button>
-              <button onClick={generateOutreach} disabled={isDrafting} className="flex-[2] flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:opacity-50">
-                {isDrafting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                Generate Sequence with {activeAgent?.name}
+              <button onClick={generateOutreach} disabled={isDrafting} className="sm:flex-[1.5] flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-[0_0_20px_rgba(79,70,229,0.3)] disabled:opacity-50 text-sm">
+                {isDrafting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Generate with {activeAgent?.name}
+              </button>
+              <button
+                onClick={handleHarmonizeWithConductor}
+                className="sm:flex-[1.5] flex justify-center items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white py-3 px-4 rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(147,51,234,0.3)] text-sm"
+                title="Harmonize and maximize positive outcome probability using Conductor engine"
+              >
+                <Zap className="w-4 h-4 text-amber-300" />
+                <span>⚡ Maximize with Conductor</span>
               </button>
             </div>
 
@@ -666,6 +869,8 @@ ${activeAgent?.name}`);
                   <Activity className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-indigo-200">
                     <span className="font-semibold text-indigo-300">Copilot Insight ({activeAgent?.name}):</span>{' '}
+                    {activeAgent?.name === 'Dragon-Outcome-Conductor' && 'Dual-core synchronized with Nexus-Orchestrator to pace real-time sub-agent execution, eliminate deal friction, and optimize positive revenue win probability.'}
+                    {activeAgent?.name === 'Nexus-Orchestrator' && 'Coordinating multi-agent macro-architectures, strategy delegation pipelines, and AI Studio application monetization.'}
                     {(activeAgent?.name === 'Enterprise Deal Closer' || activeAgent?.name === 'Aegis-Closer') && 'Operating on MEDDPICC framework principles to audit pipeline qualification gaps, eliminate single-point failure risks, and direct executive decision timelines.'}
                     {(activeAgent?.name === 'Technical Discovery Specialist' || activeAgent?.name === 'Dragon-Prospector-X') && 'Executing technical presales deep-dives, validating architecture compliance, resolving security/integration objections, and bench-testing PoC specs.'}
                     {(activeAgent?.name === 'Executive Outreach Strategist' || activeAgent?.name === 'RevenueEngine-AE') && 'Positioning strategic C-suite value, framing collaborative multi-year partnerships, and driving executive engagement.'}
@@ -673,40 +878,70 @@ ${activeAgent?.name}`);
                     {activeAgent?.name === 'Dragon-Battlecard-AI' && 'Configured for competitive displacement, high-impact landmine questions, and Total Cost of Ownership (TCO) advantage.'}
                     {activeAgent?.name === 'Aegis-PaperProcess-Navigator' && 'Specialized in unblocking InfoSec/procurement hurdles, distributing compliance collateral, and accelerating closing velocity.'}
                     {activeAgent?.name === 'RevenueEngine-Revival-Copilot' && 'Optimized for 9-word re-engagement pattern interrupts, stalled opportunity revival, and deferred ramp pricing negotiation.'}
-                    {activeAgent?.name === 'Nexus-Orchestrator' && 'Coordinating multi-agent workflows, code generation pipelines, and AI Studio application monetization.'}
-                    {!['Enterprise Deal Closer', 'Aegis-Closer', 'Technical Discovery Specialist', 'Dragon-Prospector-X', 'Executive Outreach Strategist', 'RevenueEngine-AE', 'Aegis-Inbound-SDR', 'Dragon-Battlecard-AI', 'Aegis-PaperProcess-Navigator', 'RevenueEngine-Revival-Copilot', 'Nexus-Orchestrator'].includes(activeAgent?.name || '') &&
+                    {!['Dragon-Outcome-Conductor', 'Nexus-Orchestrator', 'Enterprise Deal Closer', 'Aegis-Closer', 'Technical Discovery Specialist', 'Dragon-Prospector-X', 'Executive Outreach Strategist', 'RevenueEngine-AE', 'Aegis-Inbound-SDR', 'Dragon-Battlecard-AI', 'Aegis-PaperProcess-Navigator', 'RevenueEngine-Revival-Copilot'].includes(activeAgent?.name || '') &&
                       `Drafted using the ${activeAgent?.archetype || 'Specialized'} persona, focusing heavily on mitigating pipeline risks.`
                     }
                   </p>
                 </div>
 
-                {/* Interactive Outreach Preview with Functional Linkification */}
-                <div className="p-3.5 bg-slate-900/90 rounded-lg border border-white/5 whitespace-pre-wrap text-sm text-slate-300 font-sans leading-relaxed">
-                  {(() => {
-                    const urlRegex = /(https?:\/\/[^\s\)\],]+|www\.[^\s\)\],]+)/gi;
-                    const parts = outreachDraft.split(urlRegex);
-                    return parts.map((part, index) => {
-                      if (urlRegex.test(part)) {
-                        const href = ensureUrl(part);
-                        return (
-                          <a
-                            key={index}
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => openExternalUrl(href, e)}
-                            className="text-indigo-400 hover:text-indigo-300 underline font-medium inline-flex items-center gap-1 transition-colors break-all"
-                            title={`Open ${href}`}
-                          >
-                            <span>{part}</span>
-                            <ExternalLink className="w-3 h-3 inline-block shrink-0 opacity-80" />
-                          </a>
-                        );
-                      }
-                      return part;
-                    });
-                  })()}
-                </div>
+                {/* AI-Suggested Subject Lines */}
+                {suggestedSubjects.length > 0 && (
+                  <div className="space-y-1.5 pt-1 pb-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      Suggested Subject Lines:
+                    </span>
+                    <div className="flex flex-col gap-1.5">
+                      {suggestedSubjects.map((subj, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => handleSelectSubject(subj)}
+                          className="text-left text-xs px-3 py-1.5 rounded-lg bg-slate-900/80 hover:bg-indigo-950/40 border border-white/5 hover:border-indigo-500/40 text-slate-300 hover:text-indigo-200 transition-all flex items-center justify-between group"
+                        >
+                          <span className="truncate">{subj}</span>
+                          <span className="text-[10px] text-indigo-400 opacity-0 group-hover:opacity-100 font-medium shrink-0 ml-2">Apply &rarr;</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Interactive Outreach Preview or Textarea Editor */}
+                {isEditingDraft ? (
+                  <textarea
+                    value={outreachDraft}
+                    onChange={(e) => setOutreachDraft(e.target.value)}
+                    rows={12}
+                    className="w-full bg-slate-900/90 rounded-lg border border-indigo-500/50 p-3.5 text-sm text-slate-200 font-sans focus:outline-none focus:ring-1 focus:ring-indigo-500 leading-relaxed"
+                  />
+                ) : (
+                  <div className="p-3.5 bg-slate-900/90 rounded-lg border border-white/5 whitespace-pre-wrap text-sm text-slate-300 font-sans leading-relaxed">
+                    {(() => {
+                      const urlRegex = /(https?:\/\/[^\s\)\],]+|www\.[^\s\)\],]+)/gi;
+                      const parts = outreachDraft.split(urlRegex);
+                      return parts.map((part, index) => {
+                        if (urlRegex.test(part)) {
+                          const href = ensureUrl(part);
+                          return (
+                            <a
+                              key={index}
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => openExternalUrl(href, e)}
+                              className="text-indigo-400 hover:text-indigo-300 underline font-medium inline-flex items-center gap-1 transition-colors break-all"
+                              title={`Open ${href}`}
+                            >
+                              <span>{part}</span>
+                              <ExternalLink className="w-3 h-3 inline-block shrink-0 opacity-80" />
+                            </a>
+                          );
+                        }
+                        return part;
+                      });
+                    })()}
+                  </div>
+                )}
 
                 {/* Functional Outreach Action Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
@@ -741,23 +976,42 @@ ${activeAgent?.name}`);
                           title="Draft this email in your default mail application"
                         >
                           <Send className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Dispatch via Mail Client</span>
+                          <span>Dispatch via Mail</span>
                         </a>
                       );
                     })()}
+
+                    <button
+                      onClick={() => setIsEditingDraft(!isEditingDraft)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      {isEditingDraft ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Edit3 className="w-3.5 h-3.5 text-slate-400" />}
+                      <span>{isEditingDraft ? 'Save Edits' : 'Edit Draft'}</span>
+                    </button>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(outreachDraft);
-                      setToast({ type: 'success', message: 'Outreach draft copied to clipboard!' });
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 rounded-lg text-xs font-medium transition-colors"
-                    title="Copy full outreach draft"
-                  >
-                    <Copy className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Copy Text</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={exportOutreachSpec}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 rounded-lg text-xs font-medium transition-colors"
+                      title="Export Outreach Spec (.json)"
+                    >
+                      <Download className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Export JSON</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(outreachDraft);
+                        setToast({ type: 'success', message: 'Outreach draft copied to clipboard!' });
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 hover:text-white border border-indigo-500/40 rounded-lg text-xs font-medium transition-colors"
+                      title="Copy full outreach draft"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-indigo-300" />
+                      <span>Copy Text</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

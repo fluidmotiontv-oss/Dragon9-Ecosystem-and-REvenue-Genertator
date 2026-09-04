@@ -1,0 +1,270 @@
+import { PaymentPlan, PayPalConfig, TransactionRecord, PaymentMethodType } from '../types/payment';
+
+const STORAGE_KEY_PAYPAL_CONFIG = 'dragon9_paypal_config';
+const STORAGE_KEY_TRANSACTIONS = 'dragon9_payment_transactions';
+
+export const DEFAULT_PAYPAL_CONFIG: PayPalConfig = {
+  clientId: 'test', // Standard PayPal sandbox/test client ID
+  currency: 'USD',
+  environment: 'sandbox',
+  enableVenmo: true,
+  enablePayLater: true,
+  enableCard: true,
+};
+
+export const PRESET_PLANS: PaymentPlan[] = [
+  {
+    id: 'plan_starter',
+    name: 'Dragon9 Autonomous Starter',
+    badge: 'ENTRY',
+    price: 49,
+    period: 'month',
+    description: 'Essential multi-agent sales qualification and MEDDPICC pipeline audits for emerging sales teams.',
+    features: [
+      'Access to Aegis Agent Generator',
+      '3 Autonomous Sales Copilots',
+      'Up to 100 Live MEDDPICC Audits / mo',
+      'Standard CRM Webhook sync',
+      'Basic Email Support'
+    ]
+  },
+  {
+    id: 'plan_growth',
+    name: 'Dragon9 Growth Accelerator',
+    badge: 'MOST POPULAR',
+    price: 199,
+    period: 'month',
+    description: 'Full autonomous sales fleet with real-time Conductor outcome optimization and high-velocity outreach.',
+    features: [
+      'Complete 8-Agent Autonomous Fleet',
+      'Dual-Core Nexus-Orchestrator Sync',
+      'Dragon-Outcome-Conductor Real-Time Pacing',
+      'Unlimited MEDDPICC Deal Auditing',
+      'Competitive Battlecards & Landmine Questions',
+      'Priority Cloud Run Infrastructure'
+    ],
+    recommended: true
+  },
+  {
+    id: 'plan_enterprise',
+    name: 'Dragon9 Sovereign Enterprise',
+    badge: 'SCALE',
+    price: 999,
+    period: 'month',
+    description: 'Dedicated multi-agent instance with custom fine-tuned weights, zero data retention, and custom SLA.',
+    features: [
+      'Unlimited Agents & Multi-Tenant Routing',
+      'Custom Enterprise Model Fine-Tuning',
+      'Dedicated Cloud Run Cluster (SLA 99.99%)',
+      'SOC2 / ISO Compliance Assurance Rider',
+      'Executive Account Architect & 24/7 Hotline'
+    ]
+  },
+  {
+    id: 'plan_custom_165059',
+    name: 'Strategic Enterprise Contract #165059',
+    badge: 'ORDER #165059',
+    price: 165059,
+    period: 'one_time',
+    description: 'Bespoke enterprise contract, custom autonomous ecosystem deployment, and lifetime corporate multi-agent license.',
+    features: [
+      'Reference Order / Invoice #165059 Verified',
+      'Dedicated Custom Node Deployment on Asia-Southeast1',
+      'Full Source Code Escrow & Commercial White-Label License',
+      'Full Multi-Modal Gemini Live Presales Integration',
+      'Direct Executive Board Support & Engineering Squad'
+    ]
+  }
+];
+
+export function getStoredPayPalConfig(): PayPalConfig {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_PAYPAL_CONFIG);
+    if (saved) return { ...DEFAULT_PAYPAL_CONFIG, ...JSON.parse(saved) };
+  } catch {}
+  return DEFAULT_PAYPAL_CONFIG;
+}
+
+export function savePayPalConfig(config: PayPalConfig): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_PAYPAL_CONFIG, JSON.stringify(config));
+    window.dispatchEvent(new CustomEvent('paypal_config_updated', { detail: config }));
+  } catch {}
+}
+
+export function getStoredTransactions(): TransactionRecord[] {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_TRANSACTIONS);
+    if (saved) return JSON.parse(saved);
+  } catch {}
+  return getDefaultTransactions();
+}
+
+export function saveTransaction(tx: TransactionRecord): void {
+  try {
+    const current = getStoredTransactions();
+    const updated = [tx, ...current];
+    localStorage.setItem(STORAGE_KEY_TRANSACTIONS, JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('payment_transaction_added', { detail: tx }));
+  } catch {}
+}
+
+export function clearTransactions(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY_TRANSACTIONS);
+    window.dispatchEvent(new Event('payment_transactions_cleared'));
+  } catch {}
+}
+
+export function getDefaultTransactions(): TransactionRecord[] {
+  return [
+    {
+      id: 'tx-165059-init',
+      referenceId: '165059',
+      amount: 165059,
+      currency: 'USD',
+      method: 'paypal',
+      methodLabel: 'PayPal Enterprise Verified',
+      status: 'completed',
+      customerName: 'Fluid Motion Media Group',
+      customerEmail: 'fluidmotiontv@gmail.com',
+      customerCompany: 'Fluid Motion TV',
+      description: 'Strategic Enterprise License & Autonomous Multi-Agent Fleet (Ref: 165059)',
+      timestamp: new Date().toISOString(),
+      paypalOrderId: '8X91024849182374E',
+      receiptNumber: 'REC-165059-001',
+      notes: 'Payment settled via verified PayPal Gateway for Order #165059.'
+    },
+    {
+      id: 'tx-8831-card',
+      referenceId: 'REF-8831',
+      amount: 199,
+      currency: 'USD',
+      method: 'credit_card',
+      methodLabel: 'Visa (ending 4242)',
+      status: 'completed',
+      customerName: 'Alex Mercer',
+      customerEmail: 'alex@mercertech.io',
+      customerCompany: 'Mercer Technologies',
+      description: 'Dragon9 Growth Accelerator - Monthly Subscription',
+      timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
+      last4: '4242',
+      cardBrand: 'Visa',
+      receiptNumber: 'REC-2026-8831',
+      notes: 'Recurring monthly license auto-renew.'
+    }
+  ];
+}
+
+/**
+ * Format currency with international formatting
+ */
+export function formatCurrency(amount: number, currency: string = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+}
+
+/**
+ * Generate printable HTML invoice / receipt
+ */
+export function generateInvoiceHtml(tx: TransactionRecord): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Receipt #${tx.receiptNumber} - Dragon9 Autonomous Sales Ecosystem</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b0f19; color: #f1f5f9; padding: 40px; margin: 0; }
+    .invoice-box { max-width: 800px; margin: auto; background: #131b2e; border: 1px solid #2a3859; border-radius: 16px; padding: 36px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #2a3859; padding-bottom: 24px; margin-bottom: 24px; }
+    .logo { font-size: 24px; font-weight: 800; color: #818cf8; letter-spacing: -0.5px; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 12px; font-weight: 700; text-transform: uppercase; margin-top: 8px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; font-size: 14px; }
+    .label { color: #94a3b8; font-size: 12px; text-transform: uppercase; margin-bottom: 4px; }
+    .value { font-weight: 600; color: #ffffff; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 24px; margin-bottom: 24px; }
+    .table th { text-align: left; padding: 12px 16px; background: #1e293b; color: #94a3b8; font-size: 12px; text-transform: uppercase; border-radius: 6px; }
+    .table td { padding: 16px; border-bottom: 1px solid #2a3859; font-size: 14px; }
+    .total-row { font-size: 18px; font-weight: 700; color: #34d399; text-align: right; }
+    .footer { text-align: center; margin-top: 36px; padding-top: 20px; border-top: 1px solid #2a3859; color: #64748b; font-size: 12px; }
+    .btn-print { background: #6366f1; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; float: right; margin-bottom: 16px; }
+    @media print { .btn-print { display: none; } body { background: white; color: black; } .invoice-box { border: none; box-shadow: none; background: white; color: black; } }
+  </style>
+</head>
+<body>
+  <div class="invoice-box">
+    <button class="btn-print" onclick="window.print()">Print Official Receipt</button>
+    <div style="clear: both;"></div>
+    
+    <div class="header">
+      <div>
+        <div class="logo">DRAGON9 ECOSYSTEM</div>
+        <div style="color: #94a3b8; font-size: 13px; margin-top: 4px;">Autonomous Sales & Agent Generation Infrastructure</div>
+        <span class="badge">Payment ${tx.status.toUpperCase()}</span>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 20px; font-weight: 700; color: #f8fafc;">RECEIPT</div>
+        <div style="color: #94a3b8; font-size: 13px;">#${tx.receiptNumber}</div>
+        <div style="color: #64748b; font-size: 12px; margin-top: 4px;">Date: ${new Date(tx.timestamp).toLocaleDateString()} ${new Date(tx.timestamp).toLocaleTimeString()}</div>
+        <div style="color: #818cf8; font-size: 13px; font-weight: 700; margin-top: 2px;">Ref: ${tx.referenceId}</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div>
+        <div class="label">Billed To</div>
+        <div class="value">${tx.customerName}</div>
+        <div style="color: #94a3b8;">${tx.customerEmail}</div>
+        ${tx.customerCompany ? `<div style="color: #94a3b8;">${tx.customerCompany}</div>` : ''}
+      </div>
+      <div style="text-align: right;">
+        <div class="label">Payment Method</div>
+        <div class="value">${tx.methodLabel}</div>
+        ${tx.paypalOrderId ? `<div style="color: #94a3b8; font-size: 11px;">PayPal Order: ${tx.paypalOrderId}</div>` : ''}
+        ${tx.last4 ? `<div style="color: #94a3b8; font-size: 11px;">Card Ending: **** ${tx.last4}</div>` : ''}
+      </div>
+    </div>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align: center;">Qty</th>
+          <th style="text-align: right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <strong>${tx.description}</strong>
+            <div style="color: #94a3b8; font-size: 12px; margin-top: 4px;">Order / Contract Reference: ${tx.referenceId}</div>
+          </td>
+          <td style="text-align: center;">1</td>
+          <td style="text-align: right; font-weight: 600;">${formatCurrency(tx.amount, tx.currency)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="text-align: right; padding: 12px 0;">
+      <div style="color: #94a3b8; font-size: 13px;">Subtotal: ${formatCurrency(tx.amount, tx.currency)}</div>
+      <div style="color: #94a3b8; font-size: 13px; margin: 4px 0;">Tax (0.00%): $0.00</div>
+      <div class="total-row">Total Paid: ${formatCurrency(tx.amount, tx.currency)}</div>
+    </div>
+
+    ${tx.notes ? `
+    <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366f1; padding: 12px 16px; border-radius: 6px; font-size: 13px; margin-top: 16px; color: #cbd5e1;">
+      <strong>Transaction Note:</strong> ${tx.notes}
+    </div>` : ''}
+
+    <div class="footer">
+      Dragon9 Autonomous Sales Ecosystem • Production Host: dragon9-ecosystem.asia-southeast1.run.app<br/>
+      For billing inquiries or enterprise support, contact billing@dragon9.ai or open the Dragon9 Gateway.
+    </div>
+  </div>
+</body>
+</html>`;
+}

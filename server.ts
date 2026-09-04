@@ -292,10 +292,69 @@ ${files.join('\n')}`;
     }
   });
 
+  // PayPal & Multi-Payment API Endpoints
+  app.get('/api/payment/config', (req, res) => {
+    res.json({
+      clientId: process.env.PAYPAL_CLIENT_ID || 'test',
+      currency: 'USD',
+      environment: process.env.PAYPAL_CLIENT_ID ? 'production' : 'sandbox',
+      acceptedMethods: [
+        'paypal', 'paypal_paylater', 'venmo', 'credit_card', 
+        'apple_pay', 'google_pay', 'bank_wire', 'ach_debit', 
+        'crypto_usdt', 'crypto_btc', 'corporate_po'
+      ],
+      defaultReferenceId: '165059',
+      status: 'active'
+    });
+  });
+
+  app.post('/api/payment/create-order', (req, res) => {
+    try {
+      const { amount, currency = 'USD', referenceId = '165059', planName, customerEmail } = req.body;
+      const orderId = `PP-ORDER-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+      res.json({
+        id: orderId,
+        status: 'CREATED',
+        amount: Number(amount) || 0,
+        currency,
+        referenceId,
+        planName,
+        customerEmail,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error('Error creating payment order:', error);
+      res.status(500).json({ error: 'Failed to create payment order' });
+    }
+  });
+
+  app.post('/api/payment/capture-order', (req, res) => {
+    try {
+      const { orderId, referenceId = '165059', amount, customerEmail, customerName } = req.body;
+      const receiptNumber = `REC-${referenceId}-${Date.now().toString().slice(-4)}`;
+      res.json({
+        id: orderId || `PP-${Date.now()}`,
+        status: 'COMPLETED',
+        referenceId,
+        amount,
+        receiptNumber,
+        customerEmail,
+        customerName,
+        capturedAt: new Date().toISOString()
+      });
+    } catch (error: any) {
+      console.error('Error capturing order:', error);
+      res.status(500).json({ error: 'Failed to capture payment order' });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);

@@ -68,4 +68,4 @@ export interface Deal {
   };
 }
 
-export type ViewState = 'gateway' | 'aegis' | 'revenue';
+export type ViewState = 'gateway' | 'aegis' | 'revenue' | 'payments';

@@ -5,7 +5,8 @@ import { ViewState } from '../types/ecosystem';
 import { 
   ChevronDown, Bot, Users, Key, Rocket, Server, Activity, 
   Wifi, WifiOff, Download, MonitorDown, ExternalLink, Link2, 
-  Copy, Check, Globe, Compass, CheckCircle2, Sparkles, X, Info, Laptop 
+  Copy, Check, Globe, Compass, CheckCircle2, Sparkles, X, Info, Laptop,
+  CreditCard, ShieldCheck, DollarSign
 } from 'lucide-react';
 import { ensureUrl, openExternalUrl } from '../utils/url';
 
@@ -144,11 +145,20 @@ export default function CommandBar({ onOpenRoster }: { onOpenRoster: () => void 
     { id: 'gateway', label: 'Dragon9 Gateway', icon: <Server className="w-4 h-4" /> },
     { id: 'aegis', label: 'Aegis Agent Generator', icon: <Bot className="w-4 h-4" /> },
     { id: 'revenue', label: 'RevenueEngine AI', icon: <Activity className="w-4 h-4" /> },
+    { id: 'payments', label: 'PayPal & Checkout (#165059)', icon: <CreditCard className="w-4 h-4 text-emerald-400" /> },
   ];
 
   const currentView = views.find(v => v.id === activeView);
 
   const ecosystemLinks = [
+    {
+      id: 'dragon9-payments',
+      name: 'Enterprise Checkout & PayPal (#165059)',
+      badge: 'PAYPAL & ALL METHODS',
+      url: window.location.origin,
+      viewTarget: 'payments' as ViewState,
+      description: 'Real PayPal, Cards, Apple/Google Pay, Wire & Crypto (#165059)'
+    },
     {
       id: 'aegis-studio',
       name: 'Aegis Agent Generator',
@@ -242,6 +252,27 @@ export default function CommandBar({ onOpenRoster }: { onOpenRoster: () => void 
 
         {/* Action Controls & External Links Hub */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Quick PayPal & Checkout Button */}
+          <motion.button
+            id="btn-quick-paypal-checkout"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setActiveView('payments')}
+            className={`flex items-center gap-2 px-3 sm:px-3.5 py-2 rounded-xl text-white shadow-lg transition-all text-xs sm:text-sm font-medium border ${
+              activeView === 'payments'
+                ? 'bg-blue-600 border-blue-400 text-white ring-2 ring-blue-500/30'
+                : 'bg-slate-900/90 hover:bg-slate-800 border-indigo-500/30 text-indigo-200 hover:text-white'
+            }`}
+            title="Open real PayPal gateway & accept all payment methods for Ref #165059"
+          >
+            <span className="italic font-black text-blue-400 text-xs">P</span>
+            <span className="hidden sm:inline font-semibold">PayPal & Pay #165059</span>
+            <span className="sm:hidden font-semibold">Pay #165059</span>
+            <span className="hidden md:inline-block px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              ALL METHODS
+            </span>
+          </motion.button>
+
           {/* Install Desktop App Button */}
           <motion.button
             id="btn-install-desktop-app"

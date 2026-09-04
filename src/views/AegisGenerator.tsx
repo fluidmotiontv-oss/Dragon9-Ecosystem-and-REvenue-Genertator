@@ -306,10 +306,20 @@ runAutonomousLoop().catch(console.error);
             
             <div className="pt-2 border-t border-white/10 space-y-2">
               <button 
-                onClick={() => setActiveView('revenue')}
+                onClick={() => {
+                  try {
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.set('agent_id', activeAgent.id);
+                    newUrl.searchParams.set('user_status', 'dragon9');
+                    window.history.pushState({}, '', newUrl.toString());
+                  } catch (e) {
+                    console.error(e);
+                  }
+                  setActiveView('revenue');
+                }}
                 className="w-full flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-[0_0_20px_rgba(79,70,229,0.3)] text-sm"
               >
-                <span>Launch in RevenueEngine AI</span>
+                <span>Launch in RevenueEngine AI &rarr;</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
