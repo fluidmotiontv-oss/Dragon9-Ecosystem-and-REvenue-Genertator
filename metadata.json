@@ -1,0 +1,8 @@
+{
+  "name": "Dragon9 Ecosystem",
+  "description": "Drive auditor and automated reporting tools to optimize returns using digital assets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
