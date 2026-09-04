@@ -5,6 +5,14 @@ import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 
 // Register PWA service worker safely
+if (typeof window !== 'undefined') {
+  // Capture early beforeinstallprompt event before any React components mount
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    (window as any).__deferredPrompt = e;
+  });
+}
+
 if ('serviceWorker' in navigator && typeof window !== 'undefined') {
   try {
     registerSW({

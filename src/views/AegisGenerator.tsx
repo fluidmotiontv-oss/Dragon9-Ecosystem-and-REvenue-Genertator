@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useEcosystem } from '../store';
-import { Bot, Save, Download, Upload, Server, ArrowRight, Shield, Globe, ExternalLink, Copy, Check } from 'lucide-react';
+import { Bot, Save, Download, Upload, Server, ArrowRight, Shield, Globe, ExternalLink, Copy, Check, Compass, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ensureUrl, openExternalUrl } from '../utils/url';
 
 export default function AegisGenerator() {
   const { activeAgent, updateActiveAgent, setActiveView } = useEcosystem();
@@ -97,7 +98,7 @@ runAutonomousLoop().catch(console.error);
     el.setAttribute("download", `${activeAgent.name.toLowerCase().replace(/\s+/g, '_')}_runner.js`);
     document.body.appendChild(el);
     el.click();
-    el.remove();
+    document.body.removeChild(el);
   };
 
   return (
@@ -153,10 +154,12 @@ runAutonomousLoop().catch(console.error);
               {copiedStudio ? 'Copied' : 'Copy'}
             </button>
             <a
-              href={studioUrl}
+              href={ensureUrl(studioUrl)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => openExternalUrl(studioUrl, e)}
               className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-400/30 rounded-lg text-xs font-medium text-white shadow-md transition-colors"
+              title="Open Google AI Studio applet in new tab"
             >
               <ExternalLink className="w-3 h-3" />
               <span>Open</span>
@@ -183,7 +186,7 @@ runAutonomousLoop().catch(console.error);
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 flex-wrap">
             <button
               onClick={handleCopyCloudRun}
               className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-lg text-xs font-medium text-slate-300 transition-colors"
@@ -192,11 +195,21 @@ runAutonomousLoop().catch(console.error);
               {copiedCloudRun ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
               {copiedCloudRun ? 'Copied' : 'Copy'}
             </button>
+            <button
+              onClick={() => setActiveView('gateway')}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+              title="Switch to Gateway view"
+            >
+              <Compass className="w-3 h-3" />
+              <span>Gateway View</span>
+            </button>
             <a
-              href={cloudRunUrl}
+              href={ensureUrl(cloudRunUrl)}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={(e) => openExternalUrl(cloudRunUrl, e)}
               className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 border border-purple-400/30 rounded-lg text-xs font-medium text-white shadow-md transition-colors"
+              title="Open Cloud Run gateway in new tab"
             >
               <ExternalLink className="w-3 h-3" />
               <span>Open</span>
@@ -284,19 +297,30 @@ runAutonomousLoop().catch(console.error);
             </div>
           </div>
 
-          <div className="bg-slate-900/60 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/10 space-y-4">
-            <h2 className="text-lg font-semibold text-white mb-4">Deployment</h2>
+          <div className="bg-slate-900/60 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/10 space-y-3">
+            <h2 className="text-lg font-semibold text-white mb-2">Ecosystem Deployment & Navigation</h2>
             
-            <button onClick={handleExportRunner} className="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-white/10 text-white py-3 px-4 rounded-xl font-medium transition-colors">
-              <Server className="w-5 h-5" /> Export Node.js Runner
+            <button onClick={handleExportRunner} className="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-700 border border-white/10 text-white py-2.5 px-4 rounded-xl font-medium transition-colors text-sm">
+              <Server className="w-4 h-4" /> Export Node.js Runner
             </button>
             
-            <button 
-              onClick={() => setActiveView('revenue')}
-              className="w-full flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-[0_0_20px_rgba(79,70,229,0.3)]"
-            >
-              Launch in RevenueEngine <ArrowRight className="w-5 h-5" />
-            </button>
+            <div className="pt-2 border-t border-white/10 space-y-2">
+              <button 
+                onClick={() => setActiveView('revenue')}
+                className="w-full flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-[0_0_20px_rgba(79,70,229,0.3)] text-sm"
+              >
+                <span>Launch in RevenueEngine AI</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button 
+                onClick={() => setActiveView('gateway')}
+                className="w-full flex justify-center items-center gap-2 bg-slate-800/80 hover:bg-slate-700 border border-white/10 text-slate-300 hover:text-white py-2.5 px-4 rounded-xl font-medium transition-colors text-xs"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Return to Dragon9 Gateway</span>
+              </button>
+            </div>
           </div>
         </div>
 

@@ -17,9 +17,15 @@ import {
   Zap,
   Globe,
   Sliders,
-  CheckCircle2
+  CheckCircle2,
+  ExternalLink,
+  Copy,
+  Send,
+  Compass,
+  Bot
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ensureUrl, openExternalUrl, extractUrls } from '../utils/url';
 import {
   getHeuristicMode,
   setHeuristicMode,
@@ -570,13 +576,28 @@ ${activeAgent?.name}`);
         {/* Left Column: Outreach Generator & MEDDPICC Matrix */}
         <div className="space-y-6">
           <div className="bg-slate-900/60 backdrop-blur-xl p-6 rounded-2xl shadow-xl border border-white/10 space-y-6">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4 flex-wrap gap-2">
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Mail className="w-5 h-5 text-indigo-400" /> Outreach & MEDDPICC Deal Auditor
               </h2>
-              <button onClick={() => setActiveView('aegis')} className="text-sm text-indigo-400 hover:text-indigo-300">
-                Edit Persona in Aegis
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setActiveView('gateway')}
+                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition-colors"
+                  title="Switch to Gateway Portfolio"
+                >
+                  <Compass className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Gateway</span>
+                </button>
+                <button
+                  onClick={() => setActiveView('aegis')}
+                  className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium transition-colors"
+                  title="Edit persona in Aegis Agent Generator"
+                >
+                  <Bot className="w-3.5 h-3.5" />
+                  <span>Edit in Aegis</span>
+                </button>
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -640,7 +661,7 @@ ${activeAgent?.name}`);
             </div>
 
             {outreachDraft && (
-              <div className="mt-6 p-4 bg-slate-800/50 border border-white/10 rounded-xl">
+              <div className="mt-6 p-4 bg-slate-800/50 border border-white/10 rounded-xl space-y-3">
                 <div className="mb-3 px-3 py-2 bg-indigo-500/10 border border-indigo-500/30 rounded-lg flex items-start gap-2">
                   <Activity className="w-4 h-4 text-indigo-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-indigo-200">
@@ -658,7 +679,86 @@ ${activeAgent?.name}`);
                     }
                   </p>
                 </div>
-                <pre className="whitespace-pre-wrap text-sm text-slate-300 font-sans">{outreachDraft}</pre>
+
+                {/* Interactive Outreach Preview with Functional Linkification */}
+                <div className="p-3.5 bg-slate-900/90 rounded-lg border border-white/5 whitespace-pre-wrap text-sm text-slate-300 font-sans leading-relaxed">
+                  {(() => {
+                    const urlRegex = /(https?:\/\/[^\s\)\],]+|www\.[^\s\)\],]+)/gi;
+                    const parts = outreachDraft.split(urlRegex);
+                    return parts.map((part, index) => {
+                      if (urlRegex.test(part)) {
+                        const href = ensureUrl(part);
+                        return (
+                          <a
+                            key={index}
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => openExternalUrl(href, e)}
+                            className="text-indigo-400 hover:text-indigo-300 underline font-medium inline-flex items-center gap-1 transition-colors break-all"
+                            title={`Open ${href}`}
+                          >
+                            <span>{part}</span>
+                            <ExternalLink className="w-3 h-3 inline-block shrink-0 opacity-80" />
+                          </a>
+                        );
+                      }
+                      return part;
+                    });
+                  })()}
+                </div>
+
+                {/* Functional Outreach Action Bar */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/10">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {extractUrls(outreachDraft).map((url, idx) => (
+                      <a
+                        key={idx}
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => openExternalUrl(url, e)}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 hover:text-white border border-indigo-500/40 rounded-lg text-xs font-medium transition-colors"
+                        title="Open external link directly"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Open Booking Link</span>
+                      </a>
+                    ))}
+
+                    {(() => {
+                      const lines = outreachDraft.split('\n');
+                      let subject = `Follow up with ${prospectName || 'Team'}`;
+                      let body = outreachDraft;
+                      if (lines[0] && lines[0].toLowerCase().startsWith('subject:')) {
+                        subject = lines[0].replace(/^subject:\s*/i, '').trim();
+                        body = lines.slice(1).join('\n').trim();
+                      }
+                      return (
+                        <a
+                          href={`mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-white/10 rounded-lg text-xs font-medium transition-colors"
+                          title="Draft this email in your default mail application"
+                        >
+                          <Send className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Dispatch via Mail Client</span>
+                        </a>
+                      );
+                    })()}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(outreachDraft);
+                      setToast({ type: 'success', message: 'Outreach draft copied to clipboard!' });
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/10 rounded-lg text-xs font-medium transition-colors"
+                    title="Copy full outreach draft"
+                  >
+                    <Copy className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Copy Text</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>

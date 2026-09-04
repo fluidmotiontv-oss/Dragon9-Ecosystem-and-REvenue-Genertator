@@ -18,12 +18,24 @@ export default defineConfig(() => {
           name: 'Dragon9 Ecosystem Master Hub',
           short_name: 'Dragon9',
           description: 'Autonomous agent ecosystem and revenue engine',
+          id: '/',
+          start_url: '/',
+          scope: '/',
+          display: 'standalone',
           theme_color: '#0f172a',
+          background_color: '#0f172a',
           icons: [
             {
               src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzRmNDZlNSIvPjwvc3ZnPg==',
               sizes: '192x192',
-              type: 'image/svg+xml'
+              type: 'image/svg+xml',
+              purpose: 'any'
+            },
+            {
+              src: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzRmNDZlNSIvPjwvc3ZnPg==',
+              sizes: '512x512',
+              type: 'image/svg+xml',
+              purpose: 'any'
             }
           ]
         },

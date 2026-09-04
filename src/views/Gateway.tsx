@@ -5,12 +5,13 @@ import {
   FileSearch, LogOut, Loader2, Sparkles, FolderOpen, ChevronRight, HardDrive, 
   ListPlus, Trash2, Plus, Code2, FolderSync, ArrowRight, ExternalLink,
   CheckSquare, Square, Play, RefreshCw, CheckCircle2, Clock, AlertTriangle,
-  Download, FileText, Filter, ListTodo, Layers, Server, Zap
+  Download, FileText, Filter, ListTodo, Layers, Server, Zap, Bot, Activity, Compass
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { useEcosystem } from '../store';
 import { DriveFile, ReportResponse } from '../types';
 import { AppAuditTask, AuditJobState } from '../types/ecosystem';
+import { ensureUrl, openExternalUrl } from '../utils/url';
 
 const INITIAL_AI_APPS = [
   {
@@ -209,10 +210,11 @@ export default function Gateway() {
 
   const handleAddApp = () => {
     if (!newAppName.trim() || !newAppDesc.trim()) return;
+    const formattedUrl = newAppUrl.trim() ? ensureUrl(newAppUrl.trim()) : undefined;
     setAiApps(prev => [...prev, {
       id: Math.random().toString(36).substring(7),
       name: newAppName,
-      url: newAppUrl.trim() || undefined,
+      url: formattedUrl,
       description: newAppDesc
     }]);
     setNewAppName('');
@@ -361,7 +363,9 @@ ${auditTasks.map(t => `### [${t.status === 'completed' ? 'x' : ' '}] [${t.priori
     const a = document.createElement('a');
     a.href = url;
     a.download = `portfolio_audit_sprint_tasks_${Date.now()}.md`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
@@ -661,18 +665,48 @@ ${auditTasks.map(t => `### [${t.status === 'completed' ? 'x' : ' '}] [${t.priori
                                 )}
                                 {app.url && (
                                   <a
-                                    href={app.url}
+                                    href={ensureUrl(app.url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={(e) => openExternalUrl(app.url, e)}
                                     className="inline-flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-mono transition-colors"
+                                    title={`Launch ${app.name} in new tab`}
                                   >
                                     <ExternalLink className="w-3 h-3" />
                                     <span>Launch</span>
                                   </a>
                                 )}
+                                {(app.id === 'aegis-agent-generator' || app.name.toLowerCase().includes('aegis')) && (
+                                  <button
+                                    onClick={() => setActiveView('aegis')}
+                                    className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                                    title="Switch directly to Aegis Generator view"
+                                  >
+                                    <Compass className="w-3 h-3" />
+                                    <span>Open View</span>
+                                  </button>
+                                )}
+                                {(app.name.toLowerCase().includes('revenue')) && (
+                                  <button
+                                    onClick={() => setActiveView('revenue')}
+                                    className="inline-flex items-center gap-1 text-[11px] text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                                    title="Switch directly to RevenueEngine view"
+                                  >
+                                    <Compass className="w-3 h-3" />
+                                    <span>Open View</span>
+                                  </button>
+                                )}
                               </div>
                               {app.url && (
-                                <p className="text-[11px] text-slate-500 font-mono truncate mt-0.5">{app.url}</p>
+                                <a
+                                  href={ensureUrl(app.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => openExternalUrl(app.url, e)}
+                                  className="text-[11px] text-slate-500 hover:text-slate-300 font-mono truncate mt-0.5 block transition-colors"
+                                >
+                                  {ensureUrl(app.url)}
+                                </a>
                               )}
                               <p className="text-xs text-slate-400 mt-1 line-clamp-2">{app.description}</p>
                             </div>
@@ -820,11 +854,33 @@ ${auditTasks.map(t => `### [${t.status === 'completed' ? 'x' : ' '}] [${t.priori
               </>
             )}
 
-            {/* Handoff */}
-            <div className="mt-8 pt-6 border-t border-white/10">
-              <button onClick={() => setActiveView('aegis')} className="w-full py-3 text-indigo-400 hover:text-indigo-300 font-medium text-sm flex items-center justify-center gap-2">
-                Continue to Aegis Generator <ChevronRight className="w-4 h-4" />
-              </button>
+            {/* Handoff Navigation */}
+            <div className="mt-8 pt-6 border-t border-white/10 space-y-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2">
+                Quick View Navigation
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => setActiveView('aegis')}
+                  className="w-full py-2.5 px-3 bg-slate-800/80 hover:bg-slate-700 text-indigo-300 hover:text-indigo-200 border border-indigo-500/20 rounded-xl font-medium text-xs flex items-center justify-between transition-colors shadow-sm"
+                >
+                  <span className="flex items-center gap-2">
+                    <Bot className="w-3.5 h-3.5 text-indigo-400" />
+                    Aegis Generator
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setActiveView('revenue')}
+                  className="w-full py-2.5 px-3 bg-slate-800/80 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 border border-emerald-500/20 rounded-xl font-medium text-xs flex items-center justify-between transition-colors shadow-sm"
+                >
+                  <span className="flex items-center gap-2">
+                    <Activity className="w-3.5 h-3.5 text-emerald-400" />
+                    RevenueEngine AI
+                  </span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -984,10 +1040,46 @@ ${auditTasks.map(t => `### [${t.status === 'completed' ? 'x' : ' '}] [${t.priori
                                   {task.category}
                                 </span>
 
-                                {/* App Name Pill */}
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-indigo-950/50 text-indigo-300 border border-indigo-500/20">
-                                  {task.appName}
-                                </span>
+                                {/* App Name Pill with functional link */}
+                                {(() => {
+                                  const matchingApp = aiApps.find(a => a.name.toLowerCase() === task.appName.toLowerCase() || a.id === task.appName);
+                                  return (
+                                    <div className="inline-flex items-center gap-1.5">
+                                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-indigo-950/50 text-indigo-300 border border-indigo-500/20">
+                                        {task.appName}
+                                      </span>
+                                      {matchingApp?.url && (
+                                        <a
+                                          href={ensureUrl(matchingApp.url)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openExternalUrl(matchingApp.url, e);
+                                          }}
+                                          className="text-[10px] text-indigo-400 hover:text-indigo-300 inline-flex items-center gap-0.5 px-1 py-0.5 rounded hover:bg-white/5 transition-colors"
+                                          title={`Launch ${matchingApp.name}`}
+                                        >
+                                          <ExternalLink className="w-2.5 h-2.5" />
+                                          <span>Launch</span>
+                                        </a>
+                                      )}
+                                      {(task.appName.toLowerCase().includes('aegis')) && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setActiveView('aegis');
+                                          }}
+                                          className="text-[10px] text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-0.5 px-1 py-0.5 rounded hover:bg-white/5 transition-colors"
+                                          title="Open Aegis Generator View"
+                                        >
+                                          <span>View</span>
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
 
                                 {task.estimatedHours && (
                                   <span className="text-[11px] text-slate-500 font-mono flex items-center gap-1 ml-auto">
@@ -1008,7 +1100,28 @@ ${auditTasks.map(t => `### [${t.status === 'completed' ? 'x' : ' '}] [${t.priori
                 </div>
               ) : auditViewMode === 'report' && report ? (
                 <div className="prose prose-invert prose-indigo max-w-none flex-1 overflow-y-auto pr-2 custom-scrollbar markdown-body">
-                  <Markdown>{report}</Markdown>
+                  <Markdown
+                    components={{
+                      a: ({ href, children, ...props }: any) => {
+                        const safeHref = ensureUrl(href);
+                        return (
+                          <a
+                            href={safeHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => openExternalUrl(safeHref, e)}
+                            className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 inline-flex items-center gap-1 font-medium transition-colors"
+                            {...props}
+                          >
+                            <span>{children}</span>
+                            <ExternalLink className="w-3 h-3 inline-block shrink-0 opacity-80" />
+                          </a>
+                        );
+                      }
+                    }}
+                  >
+                    {report}
+                  </Markdown>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-500 p-8">
@@ -1029,7 +1142,28 @@ ${auditTasks.map(t => `### [${t.status === 'completed' ? 'x' : ' '}] [${t.priori
             <>
               {report ? (
                 <div className="prose prose-invert prose-indigo max-w-none flex-1 overflow-y-auto pr-2 custom-scrollbar markdown-body">
-                  <Markdown>{report}</Markdown>
+                  <Markdown
+                    components={{
+                      a: ({ href, children, ...props }: any) => {
+                        const safeHref = ensureUrl(href);
+                        return (
+                          <a
+                            href={safeHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => openExternalUrl(safeHref, e)}
+                            className="text-indigo-400 hover:text-indigo-300 underline underline-offset-2 inline-flex items-center gap-1 font-medium transition-colors"
+                            {...props}
+                          >
+                            <span>{children}</span>
+                            <ExternalLink className="w-3 h-3 inline-block shrink-0 opacity-80" />
+                          </a>
+                        );
+                      }
+                    }}
+                  >
+                    {report}
+                  </Markdown>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-500">
