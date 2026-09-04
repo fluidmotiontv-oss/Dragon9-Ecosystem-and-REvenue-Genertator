@@ -16,6 +16,12 @@ import { ensureUrl, openExternalUrl } from '../utils/url';
 
 const INITIAL_AI_APPS = [
   {
+    id: 'ai-studio-workspace',
+    name: 'AI Studio Workspace (af26f9f8)',
+    url: 'https://aistudio.google.com/app/apps/af26f9f8-73f5-422e-876b-00a4b0739275?showPreview=true&showAssistant=true',
+    description: 'Primary Google AI Studio assistant workspace, live preview environment, and agent orchestration console.'
+  },
+  {
     id: 'aegis-agent-generator',
     name: 'Aegis Agent Generator',
     url: 'https://aegis-agent-generator.ai.studio/',
@@ -49,9 +55,13 @@ export default function Gateway() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasStudio = parsed.some((a: any) => a.id === 'ai-studio-workspace' || a.url?.includes('af26f9f8'));
+          if (!hasStudio) {
+            parsed.unshift(INITIAL_AI_APPS[0]);
+          }
           const hasDragon9 = parsed.some((a: any) => a.id === 'dragon9-ecosystem' || a.url?.includes('dragon9-ecosystem'));
           if (!hasDragon9) {
-            parsed.push(INITIAL_AI_APPS[1]);
+            parsed.push(INITIAL_AI_APPS[2]);
           }
           return parsed;
         }

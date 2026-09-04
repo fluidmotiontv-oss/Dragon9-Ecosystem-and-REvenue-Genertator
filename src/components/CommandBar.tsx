@@ -152,6 +152,14 @@ export default function CommandBar({ onOpenRoster }: { onOpenRoster: () => void 
 
   const ecosystemLinks = [
     {
+      id: 'ai-studio-workspace',
+      name: 'AI Studio Workspace (af26f9f8)',
+      badge: 'LIVE WORKSPACE',
+      url: 'https://aistudio.google.com/app/apps/af26f9f8-73f5-422e-876b-00a4b0739275?showPreview=true&showAssistant=true',
+      viewTarget: 'gateway' as ViewState,
+      description: 'Google AI Studio Assistant workspace and live preview console'
+    },
+    {
       id: 'dragon9-payments',
       name: 'Enterprise Checkout & PayPal (#165059)',
       badge: 'PAYPAL & ALL METHODS',
