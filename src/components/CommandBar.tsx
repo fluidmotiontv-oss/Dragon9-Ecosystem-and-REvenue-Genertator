@@ -6,7 +6,7 @@ import {
   ChevronDown, Bot, Users, Key, Rocket, Server, Activity, 
   Wifi, WifiOff, Download, MonitorDown, ExternalLink, Link2, 
   Copy, Check, Globe, Compass, CheckCircle2, Sparkles, X, Info, Laptop,
-  CreditCard, ShieldCheck, DollarSign
+  CreditCard, ShieldCheck, DollarSign, Layout
 } from 'lucide-react';
 import { ensureUrl, openExternalUrl } from '../utils/url';
 
@@ -146,6 +146,7 @@ export default function CommandBar({ onOpenRoster }: { onOpenRoster: () => void 
     { id: 'aegis', label: 'Aegis Agent Generator', icon: <Bot className="w-4 h-4" /> },
     { id: 'revenue', label: 'RevenueEngine AI', icon: <Activity className="w-4 h-4" /> },
     { id: 'payments', label: 'PayPal & Checkout (#165059)', icon: <CreditCard className="w-4 h-4 text-emerald-400" /> },
+    { id: 'apps', label: 'D9 App Showroom', icon: <Layout className="w-4 h-4 text-amber-400" /> },
   ];
 
   const currentView = views.find(v => v.id === activeView);

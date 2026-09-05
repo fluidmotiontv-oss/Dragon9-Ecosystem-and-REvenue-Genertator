@@ -164,6 +164,17 @@ export function useEcosystem() {
   const [workerMetrics, setWorkerMetrics] = useState<WorkerMetrics>({ dealsAudited: 0, emailsDispatched: 0, clientROI: 0 });
 
   const loadState = () => {
+    // 1. Initial State parsing from URL Query params
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get('view');
+    if (viewParam && ['gateway', 'aegis', 'revenue', 'payments', 'apps'].includes(viewParam)) {
+      setActiveView(viewParam as ViewState);
+      
+      // Clean up URL without reloading
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.pushState({path:newUrl}, '', newUrl);
+    }
+
     const storedProfiles = localStorage.getItem('aegis_agent_profiles');
     if (storedProfiles) {
       let parsed = JSON.parse(storedProfiles);

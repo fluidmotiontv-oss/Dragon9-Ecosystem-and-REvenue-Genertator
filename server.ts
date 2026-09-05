@@ -410,6 +410,11 @@ ${files.join('\n')}`;
     }
   });
 
+  // App Showroom redirect
+  app.get('/apps.html', (req, res) => {
+    res.redirect('/?view=apps');
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
