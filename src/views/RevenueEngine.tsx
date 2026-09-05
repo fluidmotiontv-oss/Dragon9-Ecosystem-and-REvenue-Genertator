@@ -41,6 +41,7 @@ import {
 import { MeddpiccAuditResult, HeuristicEngineMode, NetworkStatus } from '../types/meddpicc';
 import { MeddpiccMatrix } from '../components/MeddpiccMatrix';
 import ConductorOrchestratorHub from '../components/ConductorOrchestratorHub';
+import SovereignRevenueChart from '../components/SovereignRevenueChart';
 import { 
   harmonizeOutreachForPositiveOutcome, 
   getStoredConductorMode, 
@@ -733,6 +734,11 @@ ${activeAgent?.name}`);
             <RefreshCw className={`w-4 h-4 ${isPinging ? 'animate-spin text-indigo-400' : ''}`} />
           </button>
         </div>
+      </div>
+
+      {/* Sovereign Revenue Protocol Visualization */}
+      <div className="w-full">
+        <SovereignRevenueChart />
       </div>
 
       {/* Conductor ⇄ Orchestrator Dual-Core Hub */}

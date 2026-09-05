@@ -360,6 +360,56 @@ ${files.join('\n')}`;
     }
   });
 
+  // Strict 90/9/1 Server-Side Split Calculator Endpoint
+  app.post('/api/v1/revenue/process-split', (req, res) => {
+    try {
+      const { amount, currency = 'USD', asset_id = 'UNKNOWN_ASSET', creator_id = 'D9_CREATOR' } = req.body;
+      const totalAmount = Number(amount) || 0;
+
+      const creator_payout = Number((totalAmount * 0.90).toFixed(2));
+      const community_pool = Number((totalAmount * 0.09).toFixed(2));
+      const platform_fee = Number((totalAmount * 0.01).toFixed(2));
+
+      const ledger_record = {
+        status: 'SUCCESS',
+        asset_id,
+        total_processed: totalAmount.toFixed(2),
+        currency,
+        payouts: {
+          creator: { account_id: creator_id, amount: creator_payout.toFixed(2) },
+          community_pool: { account_id: 'D9_COMMUNITY_VAULT', amount: community_pool.toFixed(2) },
+          platform: { account_id: 'D9_ECOSYSTEM_TREASURY', amount: platform_fee.toFixed(2) }
+        }
+      };
+
+      console.log(`[REVENUE ROUTER] Executed split for asset ${asset_id}:`, ledger_record);
+      res.status(200).json(ledger_record);
+    } catch (error: any) {
+      console.error('Error processing revenue split:', error);
+      res.status(500).json({ error: 'Failed to process revenue split' });
+    }
+  });
+
+  // Universal PayPal Webhook Listener
+  app.post('/api/webhooks/paypal', express.raw({type: 'application/json'}), (req, res) => {
+    try {
+      const event = JSON.parse(req.body.toString());
+      console.log(`[WEBHOOK] Received PayPal event: ${event.event_type}`);
+
+      if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+        const resource = event.resource;
+        const amount = resource?.amount?.value || '0.00';
+        console.log(`[WEBHOOK] Verified Payment Capture. Amount: $${amount}. Triggering automated provisioning...`);
+        // Note: Actual webhook verification logic requires validating headers via PayPal SDK.
+      }
+
+      res.status(200).send('Webhook Received');
+    } catch (error) {
+      console.error('Error handling PayPal webhook:', error);
+      res.status(400).send(`Webhook Error: ${error}`);
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

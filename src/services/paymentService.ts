@@ -14,65 +14,64 @@ export const DEFAULT_PAYPAL_CONFIG: PayPalConfig = {
 
 export const PRESET_PLANS: PaymentPlan[] = [
   {
-    id: 'plan_starter',
-    name: 'Dragon9 Autonomous Starter',
-    badge: 'ENTRY',
-    price: 49,
-    period: 'month',
-    description: 'Essential multi-agent sales qualification and MEDDPICC pipeline audits for emerging sales teams.',
+    id: 'plan_port_store_ad',
+    name: 'Port Store Ad Placement',
+    badge: 'BROKERAGE',
+    price: 99,
+    period: 'one_time',
+    description: 'Picture-in-Picture (PiP) Stream Monetization. Feature sponsored banners or video spots on live streams billed per temporal cycle (54-minute hours).',
     features: [
-      'Access to Aegis Agent Generator',
-      '3 Autonomous Sales Copilots',
-      'Up to 100 Live MEDDPICC Audits / mo',
-      'Standard CRM Webhook sync',
-      'Basic Email Support'
+      'Temporal Billing Cycle (54-minute hour)',
+      'Picture-in-Picture (PiP) Display',
+      'Real-Time Viewer Analytics',
+      '90/9/1 Sovereign Revenue Split Eligible',
+      'Sponsor Gateway Verification'
     ]
   },
   {
-    id: 'plan_growth',
-    name: 'Dragon9 Growth Accelerator',
-    badge: 'MOST POPULAR',
-    price: 199,
-    period: 'month',
-    description: 'Full autonomous sales fleet with real-time Conductor outcome optimization and high-velocity outreach.',
+    id: 'plan_stream_pass',
+    name: 'FluidmotionTV Stream Pass',
+    badge: 'MEDIA',
+    price: 15,
+    period: 'one_time',
+    description: 'Direct viewer access to live D9Enigma 3D portals and encrypted Web Theater broadcasts.',
     features: [
-      'Complete 8-Agent Autonomous Fleet',
-      'Dual-Core Nexus-Orchestrator Sync',
-      'Dragon-Outcome-Conductor Real-Time Pacing',
-      'Unlimited MEDDPICC Deal Auditing',
-      'Competitive Battlecards & Landmine Questions',
-      'Priority Cloud Run Infrastructure'
+      'Encrypted Broadcast Access',
+      'HTTP 206 Partial Content Streaming',
+      'Harmony Notes DSP Audio Fidelity',
+      'DRM Protected Vault Access',
+      'No Hidden Fees'
     ],
     recommended: true
   },
   {
-    id: 'plan_enterprise',
-    name: 'Dragon9 Sovereign Enterprise',
-    badge: 'SCALE',
-    price: 999,
-    period: 'month',
-    description: 'Dedicated multi-agent instance with custom fine-tuned weights, zero data retention, and custom SLA.',
+    id: 'plan_node_license',
+    name: 'Hardware Node License',
+    badge: 'INFRASTRUCTURE',
+    price: 499,
+    period: 'one_time',
+    description: 'Sovereign hardware node license for decentralized network routing and media processing.',
     features: [
-      'Unlimited Agents & Multi-Tenant Routing',
-      'Custom Enterprise Model Fine-Tuning',
-      'Dedicated Cloud Run Cluster (SLA 99.99%)',
-      'SOC2 / ISO Compliance Assurance Rider',
-      'Executive Account Architect & 24/7 Hotline'
+      'VDO4N6 Forensic Processing Rights',
+      'Edge Computing Deployment Keys',
+      'Sovereign Treasury Voting Rights (1% pool)',
+      'Network Validator Status',
+      'Hardware Setup Blueprints'
     ]
   },
   {
-    id: 'plan_custom_165059',
-    name: 'Strategic Enterprise Contract #165059',
-    badge: 'ORDER #165059',
-    price: 165059,
+    id: 'plan_sealed_vault',
+    name: 'Encrypted Sealed Vault',
+    badge: 'ASSET IP',
+    price: 15000,
     period: 'one_time',
-    description: 'Bespoke enterprise contract, custom autonomous ecosystem deployment, and lifetime corporate multi-agent license.',
+    description: 'Complete intellectual property transfer, commercial white-label license, and source code escrow.',
     features: [
-      'Reference Order / Invoice #165059 Verified',
-      'Dedicated Custom Node Deployment on Asia-Southeast1',
-      'Full Source Code Escrow & Commercial White-Label License',
-      'Full Multi-Modal Gemini Live Presales Integration',
-      'Direct Executive Board Support & Engineering Squad'
+      'SHA-256 Validated Asset Transfer',
+      'Master IP Ledger Inscription',
+      'Complete Work-For-Hire Assignment',
+      'Direct Creator 90% Payout Routing',
+      'Lifetime Commercial Rights'
     ]
   }
 ];
