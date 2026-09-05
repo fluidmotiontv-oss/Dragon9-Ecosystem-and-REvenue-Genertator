@@ -14,6 +14,21 @@ export const DEFAULT_PAYPAL_CONFIG: PayPalConfig = {
 
 export const PRESET_PLANS: PaymentPlan[] = [
   {
+    id: 'plan_global_sovereign_buyout',
+    name: 'Global Sovereign IP Buyout',
+    badge: 'TIER 0 / NINE FIGURES',
+    price: 150000000,
+    period: 'one_time',
+    description: 'Complete acquisition of the Dragon 9 Ecosystem, VDO4N6 global patents, and master Encrypted Vault keys.',
+    features: [
+      'Total Intellectual Property Handover',
+      'VDO4N6 Military-Grade Transfer',
+      '90% Liquidity Event Payout ($135M)',
+      'Sovereign Node Network Ownership',
+      'Instant Protocol Settlement'
+    ]
+  },
+  {
     id: 'plan_port_store_ad',
     name: 'Port Store Ad Placement',
     badge: 'BROKERAGE',
@@ -72,6 +87,66 @@ export const PRESET_PLANS: PaymentPlan[] = [
       'Complete Work-For-Hire Assignment',
       'Direct Creator 90% Payout Routing',
       'Lifetime Commercial Rights'
+    ]
+  },
+  {
+    id: 'plan_devops_git',
+    name: 'DevOps Git Security Suite',
+    badge: 'TIER 1 PRODUCT',
+    price: 49,
+    period: 'one_time',
+    description: 'Pre-configured Git hooks, secret scanners, and automated linter triggers. Secure your code instantly.',
+    features: [
+      'Automated Secret Scanners (AWS/Keys)',
+      'Cross-platform Git Hooks included',
+      'Linter & Formatter Triggers',
+      'Direct GitHub Template Invite',
+      'Prevents Credential Leaks'
+    ]
+  },
+  {
+    id: 'plan_cloudflare_tunnel',
+    name: 'Zero-Trust Cloudflare Starter',
+    badge: 'TIER 1 PRODUCT',
+    price: 39,
+    period: 'one_time',
+    description: 'Instant local-to-web ingress. Pre-packaged docker-compose and cloudflared config for remote dev teams.',
+    features: [
+      'docker-compose.yml included',
+      'Multi-service local routing mapped',
+      'TLS/SSL Auto-config guide',
+      'Zero-config execution pipeline',
+      'Secure Without Port Forwarding'
+    ]
+  },
+  {
+    id: 'plan_git_advanced',
+    name: 'Advanced Git Monorepo Guide',
+    badge: 'TIER 2 COURSE',
+    price: 99,
+    period: 'one_time',
+    description: 'Comprehensive walkthrough covering scalar, git-subtree, and massive repository performance tuning.',
+    features: [
+      'Large-repo performance tuning',
+      'diff-highlight advanced workflows',
+      'Downloadable script aliases',
+      'Dev environment boilerplates',
+      'Video & PDF format delivery'
+    ]
+  },
+  {
+    id: 'plan_devops_consulting',
+    name: 'Zero-Trust Pipeline Consulting',
+    badge: 'TIER 3 SETUP',
+    price: 1500,
+    period: 'one_time',
+    description: 'Turnkey deployment of secure Cloudflare Zero Trust access controls and custom CI/CD Git workflows.',
+    features: [
+      'Custom Ingress & Identity Setup',
+      'CI/CD Pipeline Integration (GitHub/GitLab)',
+      'Engineering Team Security Onboarding',
+      'Priority Support Hotline',
+      'Full Security IP Handoff'
     ]
   }
 ];

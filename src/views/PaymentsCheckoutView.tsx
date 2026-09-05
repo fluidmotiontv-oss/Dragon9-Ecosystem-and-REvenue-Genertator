@@ -43,12 +43,12 @@ import {
 export default function PaymentsCheckoutView() {
   const { setActiveView } = useEcosystem();
   const [plans] = useState<PaymentPlan[]>(PRESET_PLANS);
-  const [selectedPlan, setSelectedPlan] = useState<PaymentPlan>(PRESET_PLANS[3]); // Default to #165059 Enterprise plan
+  const [selectedPlan, setSelectedPlan] = useState<PaymentPlan>(PRESET_PLANS[0]); // Default to 9-Figure Buyout plan
   
   // Custom amount and reference state
   const [isCustomAmount, setIsCustomAmount] = useState<boolean>(false);
-  const [customAmountInput, setCustomAmountInput] = useState<string>('165059');
-  const [referenceId, setReferenceId] = useState<string>('165059');
+  const [customAmountInput, setCustomAmountInput] = useState<string>('0');
+  const [referenceId, setReferenceId] = useState<string>('D9-GLOBAL-LIQUIDITY-001');
 
   // Customer information
   const [customerName, setCustomerName] = useState<string>('Fluid Motion Media Group');
@@ -225,9 +225,8 @@ export default function PaymentsCheckoutView() {
                   onClick={() => {
                     setSelectedPlan(plan);
                     setIsCustomAmount(false);
-                    if (plan.id === 'plan_custom_165059') {
-                      setReferenceId('165059');
-                    }
+                    // Update reference ID to match plan automatically
+                    setReferenceId(`D9-${plan.id.split('_').slice(-2).join('-').toUpperCase()}-${Math.floor(Math.random() * 1000)}`);
                   }}
                   className={`relative p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between gap-4 ${
                     isSelected
