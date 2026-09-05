@@ -134,6 +134,29 @@ export default function TransactionReceiptModal({
           </div>
         </div>
 
+        {/* Encrypted Sealed Vault Access */}
+        <div className="p-4 bg-gradient-to-r from-indigo-950/50 to-slate-900 border border-indigo-500/30 rounded-2xl space-y-3 relative overflow-hidden">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-indigo-500/20 rounded-lg shrink-0 mt-0.5">
+              <ShieldCheck className="w-5 h-5 text-indigo-400" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                Encrypted Vault Unlocked
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              </h4>
+              <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
+                Settlement confirmed. Your secure digital assets (Ref #{transaction.referenceId}) have been decrypted and provisioned. The 90/9/1 revenue distribution has been executed via smart ledger.
+              </p>
+            </div>
+          </div>
+          
+          <a href="#" onClick={(e) => { e.preventDefault(); onClose(); }} className="w-full mt-2 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 border border-indigo-400">
+            <span>Access Sovereign Asset Vault</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <button

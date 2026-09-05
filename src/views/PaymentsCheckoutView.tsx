@@ -431,6 +431,48 @@ export default function PaymentsCheckoutView() {
               />
             )}
           </div>
+
+          {/* Sovereign Revenue Split: 90/9/1 Framework */}
+          <div className="p-5 bg-gradient-to-r from-slate-900 to-indigo-950/40 rounded-2xl border border-indigo-500/20 shadow-xl overflow-hidden relative">
+            <div className="absolute -right-12 -top-12 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div className="flex items-center gap-2 mb-4">
+              <Zap className="w-4 h-4 text-emerald-400" />
+              <h4 className="text-xs font-black text-white uppercase tracking-widest">Sovereign Revenue Distribution (90/9/1)</h4>
+            </div>
+            
+            <div className="flex w-full h-3 rounded-full overflow-hidden bg-slate-900 border border-white/10 mb-4 shadow-inner">
+              <div className="h-full bg-emerald-500" style={{ width: '90%' }}></div>
+              <div className="h-full bg-indigo-500 border-l border-white/20" style={{ width: '9%' }}></div>
+              <div className="h-full bg-amber-500 border-l border-white/20" style={{ width: '1%' }}></div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 uppercase">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                  Creator / IP Owner
+                </div>
+                <div className="text-lg font-black text-white font-mono">{formatCurrency(activeAmount * 0.90)} <span className="text-xs text-slate-500">90%</span></div>
+              </div>
+              
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-400 uppercase">
+                  <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                  Network / Protocol
+                </div>
+                <div className="text-lg font-black text-white font-mono">{formatCurrency(activeAmount * 0.09)} <span className="text-xs text-slate-500">9%</span></div>
+              </div>
+              
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-400 uppercase">
+                  <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                  Burn / Treasury
+                </div>
+                <div className="text-lg font-black text-white font-mono">{formatCurrency(activeAmount * 0.01)} <span className="text-xs text-slate-500">1%</span></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -761,7 +761,6 @@ ${activeAgent?.name}`);
               setOutreachDraft(optimizedOutreach);
               showToast(`Applied Conductor optimization (Score: ${score}/100)`, 'success');
             }}
-            onGenerateOutreach={generateOutreach}
           />
         )}
       </div>

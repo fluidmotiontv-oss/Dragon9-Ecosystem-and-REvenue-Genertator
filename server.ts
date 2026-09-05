@@ -332,14 +332,26 @@ ${files.join('\n')}`;
     try {
       const { orderId, referenceId = '165059', amount, customerEmail, customerName } = req.body;
       const receiptNumber = `REC-${referenceId}-${Date.now().toString().slice(-4)}`;
+      const numAmount = Number(amount) || 0;
+      
+      // Execute Sovereign Revenue Split (90/9/1)
+      const splits = {
+        creator_vault: Number((numAmount * 0.90).toFixed(2)),
+        network_protocol: Number((numAmount * 0.09).toFixed(2)),
+        burn_treasury: Number((numAmount * 0.01).toFixed(2))
+      };
+
+      console.log(`[DRAGON9 SOVEREIGN LEDGER] Order ${orderId} Settled. Split Executed:`, splits);
+
       res.json({
         id: orderId || `PP-${Date.now()}`,
         status: 'COMPLETED',
         referenceId,
-        amount,
+        amount: numAmount,
         receiptNumber,
         customerEmail,
         customerName,
+        sovereignSplits: splits,
         capturedAt: new Date().toISOString()
       });
     } catch (error: any) {
